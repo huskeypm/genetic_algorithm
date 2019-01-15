@@ -12,6 +12,7 @@ params={'kon': 1,
 
 def dydt(ys,ts,params):
   kon = params['kon']
+  #print(kon)
   koff = params['koff']
   bMax = params['bMax']
   scale = params['scale']
@@ -32,7 +33,7 @@ def simulation(
   #varDict['bMax']=5.
   #varDict['scale']=1.
   
-  print(varDict['kon'])
+  #print("sdf",varDict['kon'])
  
 
   ts = np.linspace(0,10,1000)
@@ -43,6 +44,7 @@ def simulation(
   data = dict() # This is a nuisance, but keeping backward compatible w Gotran stuff 
   data['t'] = ts          
   data['Cai'] = ys[:,0]
+  #print(ys[:,0])
   data['CaB'] = ys[:,1]
   data['Nai'] = ys[:,2]
 

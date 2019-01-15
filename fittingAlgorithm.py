@@ -69,6 +69,12 @@ def workerParams(
         outputList = outputListDefault
         print("No outputList given, using outputListDefault.") 
 
+    # prune keys from 'fixedParamList' if in variedParamDict already
+    for key in variedParamDict:
+      fixedParamDict.pop(key, None)
+
+    #print(fixedParamDict)
+
     # create new var Dict with all parameters
     varDict = dict()
     for key,val in variedParamDict.items() :
@@ -82,6 +88,8 @@ def workerParams(
       for key,val in variedParamDict.items() :
         print("  ",key,val)
         1
+
+    #quit()
 
     ## create varDict for runParams
     ###CMTprint "before runParamsFast"
@@ -219,24 +227,6 @@ def StoreJob(job1):
 
     return pandasDict
 
-#def StoreJobOLD(job1):
-#    pandasDict = dict()
-#    tag = "%d_%d"%(job1.jobNum,job1.pid)
-#    pandasDict['jobID']=tag
-#
-#    # pull out inputs
-#    varDict = job1.jobDict['varDict']
-#    for param,value in varDict.iteritems():
-#        ###CMTprint param, value
-#        pandasDict[param] = value
-#
-#    # pull out its results vector
-#    outputResults = job1.outputResults
-#    for output,result in outputResults.iteritems():
-#        ###CMTprint output, result.result
-#        pandasDict[output] = result.result
-#
-#    return pandasDict
 
 # Genetic algorithm that randomizes the provided parameters (1 for now), selects the solution that minimizes the error, and repeats this process for a given number of iterations
 def fittingAlgorithm(
@@ -499,22 +489,22 @@ def test1():
   stddev = 0.2
   variedParamDict = {
     # paramDict[myVariedParam] = [variedParamTruthVal, 0.2] # for log normal
-    "kon":  [1.0,stddev],
-    "koff":  [1.0,stddev]
+    "kon":  [0.5,stddev],
+    "koff":  [5.0,stddev]
   }
 
-  testState = "Nai"          
+  testState = "Cai"          
   results = run(
     yamlVarFile = "inputParams.yaml",
     variedParamDict = variedParamDict,
-    jobDuration = 3e3,
-    numRandomDraws = 3,  
-    numIters = 5,    
+    jobDuration = 3e3, # ignored right now 
+    numRandomDraws = 10, 
+    numIters = 10,   
     sigmaScaleRate = 0.45,
-    outputParamName = "I",
+    outputParamName = "Container",
     outputParamSearcher = testState,
     outputParamMethod = "min",
-    outputParamTruthVal=5e-9,
+    outputParamTruthVal=0.1,  
     debug = True
 )
 
@@ -523,28 +513,40 @@ def test1():
   
 # Here we try to optimize the sodium buffer to get the correct free Na concentration
 def validation():
-  # define job length and period during which data will be analyzed (assume sys. reaches steady state)
-  jobDuration = 4e3 # [ms] simulation length
-  timeRange = [1.0,jobDuration*ms_to_s] # [s] range for data (It's because of the way GetData rescales the time series)
+  stddev = 2.0
+  variedParamDict = {
+    # paramDict[myVariedParam] = [variedParamTruthVal, 0.2] # for log normal
+    "kon":  [5.0,stddev],
+  }
 
-  ## Define parameter, its mean starting value and the starting std dev
-  # Bmax_SL
-  myVariedParam="Bmax_SL"
-  paramDict = dict()
-  paramDict[myVariedParam] = [10.0, 1.0]
+  testState = "Cai"
+  results = run(
+    yamlVarFile = "inputParams.yaml",
+    variedParamDict = variedParamDict,
+    jobDuration = 3e3, # ignored right now 
+    numRandomDraws = 3,
+    numIters = 10,
+    sigmaScaleRate = 0.45,
+    outputParamName = "Container",
+    outputParamSearcher = testState,
+    outputParamMethod = "min",
+    outputParamTruthVal=0.1,
+    debug = True
+  )
 
-  ## Define the observables and the truth value
-  outputList = {"Nai":outputObj("Nai","mean",timeRange,12.0e-3)}
+  
+  refKon = 0.4165
+  bestKon = results['bestFitDict']
+  bestKon = bestKon['kon']
+  assert(np.abs(refKon - bestKon) < 1e-3), "FAIL!"
+  print("PASS!!") 
 
-  # Run
-  trial(paramDict=paramDict,outputList=outputList)
+
 
 
 """
 The genetic algorithm wrapper
 """
-
-
 def run(
   odeModel=None,   # "shannon_2004_rat.ode",
   myVariedParam=None,          
@@ -557,8 +559,8 @@ def run(
   numRandomDraws=5,
   numIters=3,
   sigmaScaleRate=0.15,
-  outputParamName="Nai",
-  outputParamSearcher="Nai",
+  outputParamName="Nai", # general name for objective object 
+  outputParamSearcher="Nai", # name of index in return array 
   outputParamMethod="mean",
   outputParamTruthTimes=None, # time points ([ms]) at which to interpolate predicted values. Used where TruthVal is an array
   outputParamTruthVal=12.0e-3, # can be an array
@@ -624,7 +626,6 @@ Fixing random seed
 """
 The genetic algorithm
 """
-
 def trial(
   odeModel,
   variedParamDict,
@@ -638,6 +639,7 @@ def trial(
   sigmaScaleRate = 1.0,
   fileName = None
   ):
+  odeModel = None 
 
   print("WHY is this wrapper needed") 
   # get varied parameter (should only be one for now)
