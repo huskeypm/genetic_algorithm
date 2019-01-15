@@ -27,7 +27,13 @@ def simulation(
   varDict=params,      # dictionary of parameters to be used for simulation
   returnDict=dict()    # dictionary output to be returned by simulation
   ):
-  varDict = params; print("OVERWRITING") 
+  #varDict = params; print("OVERWRITING") 
+  #print("OVERWRITING") 
+  #varDict['bMax']=5.
+  #varDict['scale']=1.
+  
+  print(varDict['kon'])
+ 
 
   ts = np.linspace(0,10,1000)
   y0s = [0.3,0,1]

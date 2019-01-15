@@ -140,6 +140,26 @@ def ProcessWorkerOutputs(data,outputList, tag=99):
 
   return outputResults
 
+
+
+#
+# Reads yaml file and puts into parameter dictionary 
+# 
+def YamlToParamDict(yamlVarFile):
+  fixedParamDict = None
+  if yamlVarFile is not None:
+    import yaml
+    with open(yamlVarFile ) as fp:
+      fixedParamDict = yaml.load(fp)
+      #varDict[key] = np.float( val )
+    # converting to float since yamml doesnt know science notation
+    for key, val in fixedParamDict.items():
+      fixedParamDict[key] = np.float(val)
+      #print(key, type(val))
+      #print(key, type(fixedParamDict[key]), fixedParamDict[key])
+  return fixedParamDict
+
+
 #
 # stores all data into a pandas object, which simplifies analyses later
 #
@@ -479,28 +499,14 @@ def test1():
   stddev = 0.2
   variedParamDict = {
     # paramDict[myVariedParam] = [variedParamTruthVal, 0.2] # for log normal
-    "k1_ptxs":  [3.94e-5,stddev],
-    "k3_ptxs":  [4.95e-4,stddev]
+    "kon":  [1.0,stddev],
+    "koff":  [1.0,stddev]
   }
-  """ 
-k1_ptxs = ScalarParam(3.94e-5, 
-k3_ptxs = ScalarParam(4.95e-4,
-k5_ptxs = ScalarParam(5.7e-4,
-H5_ptxs = ScalarParam(2.94e-5,
-H1_ptxs = ScalarParam(0.5e-5,
-H2_ptxs = ScalarParam(1e-4, 
-H6_ptxs = ScalarParam(1e-4,
-  """
 
-  testState = "I_ptxs"
+  testState = "Nai"          
   results = run(
-    odeModel = "microgliav53.ode",
-    yamlVarFile = "P2X7FitVar.yaml" ,
-    # I shouldn't need these 
-    #myVariedParams= "H2_ptxf",  
-    #variedParamTruthVal = 0.00026  , # was 2.22e-13 in code, but bumping it up a bit
+    yamlVarFile = "inputParams.yaml",
     variedParamDict = variedParamDict,
-    fileName = fileName,
     jobDuration = 3e3,
     numRandomDraws = 3,  
     numIters = 5,    
@@ -515,9 +521,6 @@ H6_ptxs = ScalarParam(1e-4,
 
 
   
-def DoForSeveralConc():
-  1 
-
 # Here we try to optimize the sodium buffer to get the correct free Na concentration
 def validation():
   # define job length and period during which data will be analyzed (assume sys. reaches steady state)
@@ -543,25 +546,25 @@ The genetic algorithm wrapper
 
 
 def run(
-odeModel="shannon_2004_rat.ode",
-myVariedParam=None,          
-variedParamTruthVal=5.0,
-        variedParamDict = None,      
-        timeStart= 0, # [ms] discard data before this time point
-jobDuration= 30e3, # [ms] simulation length
-        tsteps = None, # can input nonuniform times (non uniform linspace) 
-fileName=None,
-numRandomDraws=5,
-numIters=3,
-sigmaScaleRate=0.15,
-outputParamName="Nai",
-outputParamSearcher="Nai",
-outputParamMethod="mean",
-outputParamTruthTimes=None, # time points ([ms]) at which to interpolate predicted values. Used where TruthVal is an array
-outputParamTruthVal=12.0e-3, # can be an array
-        maxCores = 30,
-        yamlVarFile = None,
-        debug = False
+  odeModel=None,   # "shannon_2004_rat.ode",
+  myVariedParam=None,          
+  variedParamTruthVal=5.0,
+  variedParamDict = None,      
+  timeStart= 0, # [ms] discard data before this time point
+  jobDuration= 30e3, # [ms] simulation length
+  tsteps = None, # can input nonuniform times (non uniform linspace) 
+  fileName=None,
+  numRandomDraws=5,
+  numIters=3,
+  sigmaScaleRate=0.15,
+  outputParamName="Nai",
+  outputParamSearcher="Nai",
+  outputParamMethod="mean",
+  outputParamTruthTimes=None, # time points ([ms]) at which to interpolate predicted values. Used where TruthVal is an array
+  outputParamTruthVal=12.0e-3, # can be an array
+  maxCores = 30,
+  yamlVarFile = None,
+  debug = False
 ):
 
   # Check inputs  
@@ -577,10 +580,7 @@ outputParamTruthVal=12.0e-3, # can be an array
   
 
   # open yaml file with variables needed for sim
-  if 0: 
-    fixedParamDict = aG.YamlToParamDict(yamlVarFile)
-  else: 
-    fixedParamDict = None
+  fixedParamDict = YamlToParamDict(yamlVarFile)
 
   # debug mode
   if debug:
@@ -810,6 +810,7 @@ if __name__ == "__main__":
   outputParamTruthVal=12.0e-3
   timeStart = 0
   debug = False
+  runGA = False
 
   #fileIn= sys.argv[1]
   #if(len(sys.argv)==3):
@@ -826,8 +827,8 @@ if __name__ == "__main__":
       test1()
       quit()
 
-    if(arg=="-odeModel"):
-      odeModel = sys.argv[i+1]
+    #if(arg=="-odeModel"):
+    #  odeModel = sys.argv[i+1]
 
     if(arg=="-myVariedParam"):
       myVariedParam = sys.argv[i+1]
@@ -867,8 +868,11 @@ if __name__ == "__main__":
       yamlVarFile = sys.argv[i+1]
     elif(arg=="-debug"):
       debug = True
-
-  run(odeModel=odeModel,
+    elif(arg=="-run"): 
+      runGA = True
+ 
+  if runGA: 
+    run(odeModel=odeModel,
       yamlVarFile = yamlVarFile,
       myVariedParam=myVariedParam,
       variedParamTruthVal=variedParamTruthVal,
@@ -883,6 +887,8 @@ if __name__ == "__main__":
       outputParamMethod=outputParamMethod,
       outputParamTruthVal=outputParamTruthVal,
       debug = debug )
+  else:
+    print("Add -run to command line") 
 
 
 
