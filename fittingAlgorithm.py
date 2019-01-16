@@ -13,28 +13,36 @@ import pandas as pd
 ms_to_s = 1e-3
 
 
-class outputObj:
+## Default structure for indicating parameters that need to be randomized
+stddev = 2.0
+variedParamListDefault= {
+  # paramDict[myVariedParam] = [variedParamTruthVal, 0.2] # for log normal
+  "kon":  [5.0,stddev],
+}
+
+## Default structure for observables to be 'scored' by genetic algorithm
+class OutputObj:
     #def __init__(self,name,mode):
     def __init__(self,name,mode,timeRange,truthValue,timeInterpolations= None ):
       self.name = name
       self.mode = mode
-      self.timeRange = timeRange #[5e4,10e4]  # NEED TO ADD
+      self.timeRange = np.array(timeRange) #[5e4,10e4]  # NEED TO ADD
       self.timeInterpolations= np.copy(timeInterpolations)# if ndarray, will interpolate the values of valueTimeSeries at the provided times
       if isinstance(timeInterpolations,np.ndarray):
         self.timeInterpolations*=ms_to_s
-      self.truthValue = truthValue
+      self.truthValue = np.array(truthValue,dtype=np.float)
       self.result = None
 
 #outputs = ["Cai","Nai"]
-#outputListDefault = { "Nai":outputObj("Nai","mean"),
-#                      "Cai":outputObj("Cai","max")}
+#outputListDefault = { "Nai":OutputObj("Nai","mean"),
+#                      "Cai":OutputObj("Cai","max")}
 
 ## Format:
 # Key: state name, metric of comparison, time range over which to compute metric, truth value
-outputListDefault = { "Cai":outputObj("Cai","mean",[800,1000],
+outputListDefault = { "Cai":OutputObj("Cai","mean",[8,10], # in [s]
                        0.1),          # value you want 
-                      "Nai":outputObj("Nai","val_vs_time",[  0, 200],
-                      [1,0.5,0.15],timeInterpolations=[  0,100,200]) # check that interpolated values at 0, 100, 200 are 1, 0.5 ... 
+                      "Nai":OutputObj("Nai","val_vs_time",[  0, 2],
+                      [1,0.5,0.15],timeInterpolations=[  0,1,2]) # check that interpolated values at 0, 100, 200 are 1, 0.5 ... 
                     }
 
 class empty:pass
@@ -63,7 +71,7 @@ def workerParams(
     ###CMTprint "varDict: ", varDict
 
     outputList = jobDict['outputList']
-    ###CMTprint "outputList: ", outputList
+    print("outputList: ", outputList)
     ###CMTprint "outputListDefault: ", outputListDefault
     if outputList == None:
         outputList = outputListDefault
@@ -123,7 +131,7 @@ def workerParams(
 """
 Given data dictionary, pulls out subsection of data
 Data subset is evaluate based on 'obj.mode', which defines the type of analysis done.
-See outputObj class definition and ProcessDataArray function
+See OutputObj class definition and ProcessDataArray function
 """
 def ProcessWorkerOutputs(data,outputList, tag=99):
   outputResults = {}
@@ -513,16 +521,11 @@ def test1():
   
 # Here we try to optimize the sodium buffer to get the correct free Na concentration
 def validation():
-  stddev = 2.0
-  variedParamDict = {
-    # paramDict[myVariedParam] = [variedParamTruthVal, 0.2] # for log normal
-    "kon":  [5.0,stddev],
-  }
 
   testState = "Cai"
   results = run(
     yamlVarFile = "inputParams.yaml",
-    variedParamDict = variedParamDict,
+    variedParamDict = variedParamListDefault,
     jobDuration = 3e3, # ignored right now 
     numRandomDraws = 3,
     numIters = 10,
@@ -546,6 +549,7 @@ def validation():
 
 """
 The genetic algorithm wrapper
+This is the one you should mostly interface with (see validation()) 
 """
 def run(
   odeModel=None,   # "shannon_2004_rat.ode",
@@ -559,6 +563,7 @@ def run(
   numRandomDraws=5,
   numIters=3,
   sigmaScaleRate=0.15,
+  outputList = None, # instead of manually passing in output param, comparison method etc, define list here (see default above) 
   outputParamName="Nai", # general name for objective object 
   outputParamSearcher="Nai", # name of index in return array 
   outputParamMethod="mean",
@@ -603,14 +608,16 @@ Fixing random seed
 
 
   ## Define the observables and the truth value
-  outputList = {
-    outputParamName:outputObj(
-      outputParamSearcher,
-      outputParamMethod,
-      timeRange,
-      outputParamTruthVal,
-      timeInterpolations= outputParamTruthTimes)
-  }
+  if outputList is None: 
+    print("Generating single-variable output list") 
+    outputList = {
+      outputParamName:OutputObj(
+        outputParamSearcher,
+        outputParamMethod,
+        timeRange,
+        outputParamTruthVal,
+       timeInterpolations= outputParamTruthTimes)
+    }
 
 
   # Run
