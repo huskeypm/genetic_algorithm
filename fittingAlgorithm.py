@@ -4,11 +4,13 @@ import sys
 import multiprocessing
 import random
 from os import getpid
-import runner # simulation engine                 
-import analyze # analyses specific to runner 
 import numpy as np
 import copy
 import pandas as pd
+
+# USER EDITS THESE
+import runner # simulation engine                 
+import analyze # analyses specific to runner 
 #import matplotlib.pylab as plt
 ms_to_s = 1e-3
 
@@ -103,7 +105,8 @@ def workerParams(
     ###CMTprint "before runParamsFast"
     ## Launch job with parameter set
     returnDict = dict() # return results vector
-    runner.simulation(varDict,returnDict) 
+    simulation = runner.Runner()
+    simulation.simulate(varDict,returnDict) 
 
     ###CMTprint "after runParamsFast"
 
@@ -161,10 +164,10 @@ def ProcessWorkerOutputs(data,outputList, tag=99):
 #
 # Reads yaml file and puts into parameter dictionary 
 # 
+import yaml
 def YamlToParamDict(yamlVarFile):
   fixedParamDict = None
   if yamlVarFile is not None:
-    import yaml
     with open(yamlVarFile ) as fp:
       fixedParamDict = yaml.load(fp)
       #varDict[key] = np.float( val )
@@ -493,7 +496,7 @@ def fittingAlgorithm(
   return randomDrawAllIters, bestDrawAllIters,previousFitness
 
 def test1():
-  # get stuff for p2x7 valid
+  # parameters to vary 
   stddev = 0.2
   variedParamDict = {
     # paramDict[myVariedParam] = [variedParamTruthVal, 0.2] # for log normal
@@ -501,18 +504,25 @@ def test1():
     "koff":  [5.0,stddev]
   }
 
+  # list of observables to be scored by GA 
+  outputList = { 
+    #"Cai":OutputObj("Cai","mean",[8,10], # in [s]
+    # 0.1),          # value you want 
+    "Nai":OutputObj("Nai","val_vs_time",[  0, 2],
+    [1,0.5,0.15],timeInterpolations=[  0,1,2]) # check that interpolated values at 0, 100, 200 are 1, 0.5 ... 
+  }
+
   testState = "Cai"          
+  simulation = runner.Runner()
   results = run(
+    simulation,
     yamlVarFile = "inputParams.yaml",
     variedParamDict = variedParamDict,
     jobDuration = 3e3, # ignored right now 
     numRandomDraws = 10, 
     numIters = 10,   
-    sigmaScaleRate = 0.45,
-    outputParamName = "Container",
-    outputParamSearcher = testState,
-    outputParamMethod = "min",
-    outputParamTruthVal=0.1,  
+    #sigmaScaleRate = 0.45,
+    outputList = outputList,
     debug = True
 )
 
@@ -523,7 +533,9 @@ def test1():
 def validation():
 
   testState = "Cai"
+  simulation = runner.Runner()
   results = run(
+    simulation,
     yamlVarFile = "inputParams.yaml",
     variedParamDict = variedParamListDefault,
     jobDuration = 3e3, # ignored right now 
@@ -552,7 +564,8 @@ The genetic algorithm wrapper
 This is the one you should mostly interface with (see validation()) 
 """
 def run(
-  odeModel=None,   # "shannon_2004_rat.ode",
+  simulation,
+  odeModel=None,   # "shannon_2004_rat.ode", # NEEDS TO BE ANTIQUATED 
   myVariedParam=None,          
   variedParamTruthVal=5.0,
   variedParamDict = None,      
@@ -757,6 +770,29 @@ def PlotDebuggingData(allDraws,bestDraws,numIters,numRandomDraws,title=None,file
   else:
     plt.gcf().savefig(fileName)
 
+# Stores output files into new yaml file 
+def OutputOptimizedParams(
+  bestFitDict,
+  originalYamlFile = None,
+  outputYamlFile = "newparams.yaml"
+  ):
+
+  # load old 
+  paramDict = YamlToParamDict(originalYamlFile)
+  #print(paramDict)
+ 
+  # Overwrite
+  for key in bestFitDict:
+    paramDict[key] = bestFitDict[key]
+
+  #print(paramDict)
+
+  # save as yaml 
+  with open(outputYamlFile, 'w') as outfile:
+    yaml.dump(paramDict, outfile, default_flow_style=False)
+  print("Saved new outputfile with optimized parameters")
+  
+
 
 #!/usr/bin/env python
 import sys
@@ -881,7 +917,10 @@ if __name__ == "__main__":
       runGA = True
  
   if runGA: 
-    run(odeModel=odeModel,
+    simulation = runner.Runner()
+    run(
+      simulation,
+      odeModel=odeModel,
       yamlVarFile = yamlVarFile,
       myVariedParam=myVariedParam,
       variedParamTruthVal=variedParamTruthVal,

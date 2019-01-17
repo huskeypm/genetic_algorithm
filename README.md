@@ -1,7 +1,7 @@
-# genetic_algorithm
+### genetic_algorithm
 Genetic algorithm for fitting ODEs
 
-##
+## components 
 runner.py - your simulation engine
 analyze.py - basic functions for analyzing outputs from runner.py dictionaries
 inputParams.yaml - optional for passing in fixed parameters to runner.py
@@ -22,3 +22,19 @@ python3 fittingAlgorithm.py -run -myVariedParam kon -variedParamTruthVal 2.0 -fi
 
 ## Done 
 - Add yaml reader
+
+## To set up for new cases 
+- Ingredients 
+-- runner (runner.py) is the wrapper for your code. 
+-- analysis (analysis.py) is the wrapper for analysis of your code's results
+-- inputParams.yaml  - default parameters for your code 
+
+- To interface the GA with your code, you need to include a function called
+simulate() in your code that expects a dictionary of parameters and 
+parameter values, e.g. 
+  varDict['kon'] = 1.
+as well as a blank dictionary called returnDict. It needs to be structured as a class, so check runner.py for an example  
+- rest of instructions are in exampleFitting.ipynb....
+
+
+
