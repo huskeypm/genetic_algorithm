@@ -58,6 +58,7 @@ def workerParams(
     skipProcess=False,
     verbose = False): 
 
+    simulation = jobDict['simulation']  # simulation object
     odeName = jobDict['odeModel']
     jobNum = jobDict['jobNum']
     dtn = jobDict['jobDuration'] # [ms]
@@ -105,7 +106,6 @@ def workerParams(
     ###CMTprint "before runParamsFast"
     ## Launch job with parameter set
     returnDict = dict() # return results vector
-    simulation = runner.Runner()
     simulation.simulate(varDict,returnDict) 
 
     ###CMTprint "after runParamsFast"
@@ -241,6 +241,7 @@ def StoreJob(job1):
 
 # Genetic algorithm that randomizes the provided parameters (1 for now), selects the solution that minimizes the error, and repeats this process for a given number of iterations
 def fittingAlgorithm(
+  simulation,
   odeModel,
   myVariedParamKeys, # Supports multiple params, hopefully 
   variedParamDict = None,
@@ -331,7 +332,9 @@ def fittingAlgorithm(
               varDict = copy.copy(defaultVarDict)
               varDict[parameter] = val
 
-              jobDict =  {'odeModel':odeModel,'varDict':varDict,'fixedParamDict':fixedParamDict,
+              jobDict =  {
+                          'simulation':simulation,
+                          'odeModel':odeModel,'varDict':varDict,'fixedParamDict':fixedParamDict,
                           'jobNum':ctr,'jobDuration':jobDuration, 'tsteps':tsteps,
                           'outputList':outputList}
               jobList.append( jobDict )
@@ -635,7 +638,7 @@ Fixing random seed
 
   # Run
   numCores = np.min([numRandomDraws,maxCores])
-  results = trial(odeModel=odeModel,variedParamDict=variedParamDict,
+  results = trial(simulation,odeModel=odeModel,variedParamDict=variedParamDict,
                   outputList=outputList,fixedParamDict=fixedParamDict,
                   numCores=numCores,numRandomDraws=numRandomDraws,
                   jobDuration=jobDuration,tsteps=tsteps,
@@ -647,6 +650,7 @@ Fixing random seed
 The genetic algorithm
 """
 def trial(
+  simulation,
   odeModel,
   variedParamDict,
   outputList,
@@ -671,6 +675,7 @@ def trial(
 
   ## do fitting and get back debugging details
   allDraws,bestDraws,fitness = fittingAlgorithm(
+    simulation,
     odeModel,keys, variedParamDict=variedParamDict,fixedParamDict=fixedParamDict,
       numCores=numCores, numRandomDraws=numRandomDraws, 
       jobDuration=jobDuration, tsteps=tsteps,
