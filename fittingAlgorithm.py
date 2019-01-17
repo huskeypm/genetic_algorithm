@@ -74,7 +74,7 @@ def workerParams(
     ###CMTprint "varDict: ", varDict
 
     outputList = jobDict['outputList']
-    print("outputList: ", outputList)
+    #print("outputList: ", outputList)
     ###CMTprint "outputListDefault: ", outputListDefault
     if outputList == None:
         outputList = outputListDefault
@@ -587,6 +587,7 @@ def run(
   outputParamTruthVal=12.0e-3, # can be an array
   maxCores = 30,
   yamlVarFile = None,
+  outputYamlFile = None,
   debug = False
 ):
 
@@ -643,6 +644,9 @@ Fixing random seed
                   numCores=numCores,numRandomDraws=numRandomDraws,
                   jobDuration=jobDuration,tsteps=tsteps,
                   numIters=numIters,sigmaScaleRate=sigmaScaleRate,fileName=fileName)
+
+  if outputYamlFile is not None:
+    OutputOptimizedParams(results['bestFitDict'],originalYamlFile=yamlVarFile,outputYamlFile=outputYamlFile)
 
   return results
 
