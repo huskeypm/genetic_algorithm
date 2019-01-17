@@ -7,11 +7,11 @@ from os import getpid
 import numpy as np
 import copy
 import pandas as pd
+import matplotlib.pylab as plt
 
 # USER EDITS THESE
 import runner # simulation engine                 
 import analyze # analyses specific to runner 
-#import matplotlib.pylab as plt
 ms_to_s = 1e-3
 
 
@@ -708,39 +708,55 @@ def trial(
   }
 
   ## do a demorun with single worker to demonstrate new fit
-  print("Commented out Demo") 
-  #results['data']  = Demo(odeModel, jobDuration=jobDuration,tsteps=tsteps,fixedParamDict=fixedParamDict,results=results)
+  results['fixedParamDict'] = fixedParamDict
+  results['data']  = DisplayFit(
+    simulation,
+    odeModel, jobDuration=jobDuration,tsteps=tsteps,fixedParamDict=fixedParamDict,results=results)
 
   return results
 
-def Demo(odeModel, jobDuration=30e3,tsteps=None,fixedParamDict=None,results=None):           
+def DisplayFit(simulation,
+         odeModel=None, 
+         jobDuration=30e3,tsteps=None,
+         fixedParamDict=None,
+         results=None):           
   print("Running demo with new parameters for comparison against truth" )
 
   # run job with best parameters
   outputList = results['outputList']
   varDict = results['bestFitDict'] # {variedParamKey: results['bestFitParam']}
-  jobDict =  {'odeModel':odeModel,'varDict':varDict,'fixedParamDict':fixedParamDict,'jobNum':0,
+  jobDict =  {
+               'simulation':simulation,
+               'odeModel':odeModel,'varDict':varDict,'fixedParamDict':fixedParamDict,'jobNum':0,
               'jobDuration':jobDuration, 'tsteps':tsteps,
                'outputList':results['outputList']}
   dummy, workerResults = workerParams(jobDict,skipProcess=True, verbose=True)
 
   # cludgy way of plotting result
-  key = outputList.keys()[0]
+  for key in results['outputList'].keys():
+    1
+  #key = outputList.keys()[0]
   obj= outputList[key]
   testStateName = obj.name
   data = workerResults.outputResults
-  dataSub = aG.GetData(data,testStateName)
+  dataSub = analyze.GetData(data,testStateName)
 
   plt.figure()
   ts = dataSub.t
   plt.plot(ts,dataSub.valsIdx,label="pred")
-  if isinstance( obj.timeInterpolations,np.ndarray):
+  #print("SDF",obj.truthValue)
+  #print(obj.timeInterpolations) 
+  #print( isinstance( None, np.ndarray ) ) # obj.timeInterpolations,np.ndarray))
+  #if isinstance( obj.timeInterpolations,np.ndarray):
+  #print(np.size(obj.timeInterpolations))
+
+  if np.size(obj.timeInterpolations) > 1: 
     plt.scatter(obj.timeInterpolations,obj.truthValue,label="truth")
   else:
     plt.plot([np.min(ts),np.max(ts)],[obj.truthValue,obj.truthValue],'r--',label="truth")
 
   plt.title(testStateName)
-  plt.legend(loc=4)
+  plt.legend(loc=0)
   plt.gcf().savefig(testStateName + ".png")
 
 
