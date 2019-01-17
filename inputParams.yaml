@@ -1,0 +1,5 @@
+# yaml file that contains specific variables (fixed) needed for fitting the P2X4 currents
+kon: 1.0   
+koff: 1.0      
+bMax: 5
+scale: 1       
