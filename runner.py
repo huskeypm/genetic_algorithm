@@ -40,6 +40,7 @@ class Runner():
     #print("sdf",varDict['kon'])
    
   
+    # range is in [s]
     ts = np.linspace(0,10,1000)
     y0s = [0.3,0,1]
     ys = odeint(self.dydt,y0s,ts,args=(varDict,))
