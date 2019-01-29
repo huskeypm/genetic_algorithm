@@ -38,9 +38,13 @@ def ProcessDataArray(
       
       # Time is listed in seconds [s] EXCEPT if user provided steps (tsteps) were used. 
       # in this case, the t's are in the same units as tsteps 
+    #   print('timeRange', timeRange)
       timeSeries = dataSub.t
+    #   print('dataSub timeSeries',timeSeries)
       idxMin = (np.abs(timeSeries-timeRange[0])).argmin()  # looks for entry closest to timeRange[i]
+    #   print('idxMin', idxMin)
       idxMax = (np.abs(timeSeries-timeRange[1])).argmin()
+    #   print('idxMax', idxMax)
       timeSeries = dataSub.t[idxMin:idxMax]
       valueTimeSeries = dataSub.valsIdx[idxMin:idxMax]
       #print "obj.timeRange[0]: ", timeRange[0]
@@ -56,6 +60,9 @@ def ProcessDataArray(
       elif mode == "val_vs_time":
           #print "time",timeInterpolations 
           #print "pts", timeSeries, valueTimeSeries
+        #   print('timeInterpolations',timeInterpolations)
+        #   print('timeSeries',timeSeries)
+        #   print('valueTimeSeries',valueTimeSeries)
           result = np.interp(timeInterpolations,timeSeries,valueTimeSeries)
           #print "interp", result     
 

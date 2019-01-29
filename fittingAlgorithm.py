@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 import sys
 #sys.path.append("./fitting_sensitivity/")
 
@@ -81,8 +82,9 @@ def workerParams(
         print("No outputList given, using outputListDefault.") 
 
     # prune keys from 'fixedParamList' if in variedParamDict already
-    for key in variedParamDict:
-      fixedParamDict.pop(key, None)
+    if fixedParamDict is not None:
+      for key in variedParamDict:
+        fixedParamDict.pop(key, None)
 
     #print(fixedParamDict)
 
@@ -116,6 +118,8 @@ def workerParams(
     if skipProcess:
       outputResults = data
     else:
+      # print('data',data)
+      # print('outputList',outputList)
       outputResults = ProcessWorkerOutputs(data,outputList,tag=jobNum)
     #if verbose:
     #  for key,val in outputResults.iteritems() :
@@ -145,6 +149,7 @@ def ProcessWorkerOutputs(data,outputList, tag=99):
     ###CMTprint "in the for loop"
     ###CMTprint "obj.timeRange: ", obj.timeRange
     dataSub = analyze.GetData(data, obj.name)
+    print('dataSub', dataSub)
 
     ###CMTprint "dataSub: ", dataSub
     ###CMTprint "dataSub.valsIdx: ", dataSub.valsIdx
@@ -365,6 +370,9 @@ def fittingAlgorithm(
       if numCores > 1:
           print("Multi-threading")
           pool = multiprocessing.Pool(processes = numCores)
+          # print('jobList',jobList)
+          # for i,job in enumerate(jobList):
+          #   print('jobList',i, job)
           jobOutputs = dict( pool.map(workerParams, jobList))#, outputList ) )
       else:
           print("Restricting to one job only/assuming results are all that's needed") 
