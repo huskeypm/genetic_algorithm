@@ -259,7 +259,9 @@ def fittingAlgorithm(
   truthValues = None,
   sigmaScaleRate = 1., # rate at which sigma is reduced by iteration (larger values, faster decay) 
   maxRejectionsAllowed=3,  # number of rejected steps in a row before exiting alg. 
-  numIters = 10):
+  numIters = 10,
+  distro = 'lognormal' # distribution with which we select new parameters
+  ):
 
   trialParamVarDict = copy.copy( variedParamDict ) 
 
@@ -316,7 +318,7 @@ def fittingAlgorithm(
           rescaledSigma = sigma*np.exp(-sigmaScaleRate * (iters-1))
           ###CMTprint "rescaledSigma: ", rescaledSigma, " rate ", sigmaScaleRate
           #rescaledSigma = sigma
-          distro = "lognormal"
+          # distro = "lognormal"
           if distro=="normal":
             randomDraws = np.random.normal(mu,rescaledSigma,numRandomDraws)
           if distro=="lognormal":
@@ -596,7 +598,8 @@ def run(
   maxCores = 30,
   yamlVarFile = None,
   outputYamlFile = None,
-  debug = False
+  debug = False,
+  distro = 'lognormal' # distribution with which we select new parameters
 ):
 
   # Check inputs  
@@ -651,7 +654,7 @@ Fixing random seed
                   outputList=outputList,fixedParamDict=fixedParamDict,
                   numCores=numCores,numRandomDraws=numRandomDraws,
                   jobDuration=jobDuration,tsteps=tsteps,
-                  numIters=numIters,sigmaScaleRate=sigmaScaleRate,fileName=fileName)
+                  numIters=numIters,sigmaScaleRate=sigmaScaleRate,fileName=fileName,distro=distro)
 
   if outputYamlFile is not None:
     OutputOptimizedParams(results['bestFitDict'],originalYamlFile=yamlVarFile,outputYamlFile=outputYamlFile)
@@ -673,7 +676,8 @@ def trial(
   tsteps= None,  # optional time steps [ms] 
   numIters=2,
   sigmaScaleRate = 1.0,
-  fileName = None
+  fileName = None,
+  distro = 'lognormal' # distribution with which we select new parameters
   ):
   odeModel = None 
 
@@ -691,7 +695,7 @@ def trial(
     odeModel,keys, variedParamDict=variedParamDict,fixedParamDict=fixedParamDict,
       numCores=numCores, numRandomDraws=numRandomDraws, 
       jobDuration=jobDuration, tsteps=tsteps,
-      outputList=outputList,numIters=numIters, sigmaScaleRate=sigmaScaleRate)
+      outputList=outputList,numIters=numIters, sigmaScaleRate=sigmaScaleRate,distro=distro)
   bestFitDict =  bestDraws[-1]
   print("Best fit parameters", bestFitDict) 
 
