@@ -243,6 +243,73 @@ def StoreJob(job1):
 
     return pandasDict
 
+#
+#
+# Pulled out parameter randomization 
+#
+def randParams(
+  simulation,
+  jobList,defaultVarDict,fixedParamDict,parmDict,tsteps,numRandomDraws,randomDrawAllIters,iters,sigmaScaleRate,distro,outputList):
+  ctr=0
+  for parameter,values in parmDict.items():
+  
+      ## generate random pertubrations
+      # draw from normal distribution
+      print("Sigm needs to be specific to each var") 
+      mu,sigma = values
+      ###CMTprint "sigma: ", sigma
+      #rescaledSigma = sigma/(sigmaScaleRate * iters)
+      rescaledSigma = sigma*np.exp(-sigmaScaleRate * (iters-1))
+      ###CMTprint "rescaledSigma: ", rescaledSigma, " rate ", sigmaScaleRate
+      #rescaledSigma = sigma
+      # distro = "lognormal"
+      if distro=="normal":
+        randomDraws = np.random.normal(mu,rescaledSigma,numRandomDraws)
+      if distro=="lognormal":
+        unif = np.random.normal(0,rescaledSigma,numRandomDraws)
+        randomDraws = np.exp(unif) * mu
+  
+  
+      randomDraws = np.sort(randomDraws)
+  
+      # create a list of jobs
+      ###CMTprint parameter, " random draws:"
+      ###CMTprint randomDraws
+      randomDrawAllIters.append(randomDraws)
+      #listN = [{parameter:val,'jobNum':i} for i,val in enumerate(randomDraws)]
+      #jobList+=listN
+      ###CMTprint "JobList: ", jobList
+      for val in randomDraws:
+          varDict = copy.copy(defaultVarDict)
+          varDict[parameter] = val
+  
+          jobDict =  {
+                      'simulation':simulation,
+                      'odeModel':odeModel,'varDict':varDict,'fixedParamDict':fixedParamDict,
+                      'jobNum':ctr,'jobDuration':jobDuration, 'tsteps':tsteps,
+                      'outputList':outputList}
+          jobList.append( jobDict )
+          ctr+=1
+          ###CMTprint "JobList2: ", jobList
+  
+  # now selecting subset via reservoire sampling 
+  print("PKH need to pull this out as func for several var")
+  N = numRandomDraws              
+  sample = [];
+  for i,line in enumerate(jobList): 
+    ###CMTprint line['jobNum']
+    if i < N:
+      sample.append(line)
+    elif i >= N and random.random() < N/float(i+1):
+      replace = random.randint(0,len(sample)-1)
+      sample[replace] = line
+  jobList = sample 
+  ###CMTprint "Print new" 
+  # renumber job num for indexing later 
+  for i,line in enumerate(jobList): 
+     # old print line['jobNum'] 
+     line['jobNum'] = i
+
 
 # Genetic algorithm that randomizes the provided parameters (1 for now), selects the solution that minimizes the error, and repeats this process for a given number of iterations
 def fittingAlgorithm(
@@ -305,70 +372,14 @@ def fittingAlgorithm(
       # Here we create a much larger job list than we can actually use, so that we can randomly select a subset of which
       # This is mostly important for the multi-variable cases
       jobList = []
-      ctr=0
       ## randomly distribute n numbers[scales] into m bins
       print("Should probably rescale sigma by the tolerated error vs current error and only for selected params ") 
-      for parameter,values in parmDict.items():
-
-          ## generate random pertubrations
-          # draw from normal distribution
-          print("Sigm needs to be specific to each var") 
-          mu,sigma = values
-          ###CMTprint "sigma: ", sigma
-          #rescaledSigma = sigma/(sigmaScaleRate * iters)
-          rescaledSigma = sigma*np.exp(-sigmaScaleRate * (iters-1))
-          ###CMTprint "rescaledSigma: ", rescaledSigma, " rate ", sigmaScaleRate
-          #rescaledSigma = sigma
-          # distro = "lognormal"
-          if distro=="normal":
-            randomDraws = np.random.normal(mu,rescaledSigma,numRandomDraws)
-          if distro=="lognormal":
-            unif = np.random.normal(0,rescaledSigma,numRandomDraws)
-            randomDraws = np.exp(unif) * mu
-
-
-          randomDraws = np.sort(randomDraws)
-
-          # create a list of jobs
-          ###CMTprint parameter, " random draws:"
-          ###CMTprint randomDraws
-          randomDrawAllIters.append(randomDraws)
-          #listN = [{parameter:val,'jobNum':i} for i,val in enumerate(randomDraws)]
-          #jobList+=listN
-          ###CMTprint "JobList: ", jobList
-          for val in randomDraws:
-              varDict = copy.copy(defaultVarDict)
-              varDict[parameter] = val
-
-              jobDict =  {
-                          'simulation':simulation,
-                          'odeModel':odeModel,'varDict':varDict,'fixedParamDict':fixedParamDict,
-                          'jobNum':ctr,'jobDuration':jobDuration, 'tsteps':tsteps,
-                          'outputList':outputList}
-              jobList.append( jobDict )
-              ctr+=1
-              ###CMTprint "JobList2: ", jobList
-
-      # now selecting subset via reservoire sampling 
-      print("PKH need to pull this out as func for several var")
-      N = numRandomDraws              
-      sample = [];
-      for i,line in enumerate(jobList): 
-        ###CMTprint line['jobNum']
-        if i < N:
-          sample.append(line)
-        elif i >= N and random.random() < N/float(i+1):
-          replace = random.randint(0,len(sample)-1)
-          sample[replace] = line
-      jobList = sample 
-      ###CMTprint "Print new" 
-      # renumber job num for indexing later 
-      for i,line in enumerate(jobList): 
-         # old print line['jobNum'] 
-         line['jobNum'] = i
       
       
 
+      randParams(
+        simulation,
+        jobList,defaultVarDict,fixedParamDict,parmDict,tsteps,numRandomDraws,randomDrawAllIters,iters,sigmaScaleRate,distro,outputList)
    
       ## Run jobs
       if numCores > 1:
