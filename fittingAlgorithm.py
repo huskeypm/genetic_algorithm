@@ -312,6 +312,7 @@ def fittingAlgorithm(
 
           ## generate random pertubrations
           # draw from normal distribution
+          print("Sigm needs to be specific to each var") 
           mu,sigma = values
           ###CMTprint "sigma: ", sigma
           #rescaledSigma = sigma/(sigmaScaleRate * iters)
@@ -349,6 +350,7 @@ def fittingAlgorithm(
               ###CMTprint "JobList2: ", jobList
 
       # now selecting subset via reservoire sampling 
+      print("PKH need to pull this out as func for several var")
       N = numRandomDraws              
       sample = [];
       for i,line in enumerate(jobList): 
