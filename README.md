@@ -36,5 +36,7 @@ parameter values, e.g.
 as well as a blank dictionary called returnDict. It needs to be structured as a class, so check runner.py for an example  
 - rest of instructions are in exampleFitting.ipynb....
 
+## Bells and whistles
+Cross-overs added 
 
 
