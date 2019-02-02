@@ -149,7 +149,7 @@ def ProcessWorkerOutputs(data,outputList, tag=99):
     ###CMTprint "in the for loop"
     ###CMTprint "obj.timeRange: ", obj.timeRange
     dataSub = analyze.GetData(data, obj.name)
-    print('dataSub', dataSub)
+    #print('dataSub', dataSub)
 
     ###CMTprint "dataSub: ", dataSub
     ###CMTprint "dataSub.valsIdx: ", dataSub.valsIdx
@@ -242,6 +242,53 @@ def StoreJob(job1):
         pandasDict[output] = result.result
 
     return pandasDict
+# creates cross-overmutations by copying over randommized parameter from another randomly 
+# chosen child. Checks to make sure parameters are different  
+#
+# select 3 at random (assuming 50% of a parameters variations will improve, 50% worsen, 
+# Pimprov = Pv1prov*Pv2improv = 0.25
+# Pworsen = 1-Pimprove
+# Pworsen_Nruns = (1-Pimprove)**N ~ 0.4 for three runs 
+def Crossovers(jobList,numCrossOvers=3
+  ):
+
+  # randomize indices
+  numChildren = len(jobList) 
+  idxs = np.arange( numChildren )   
+  np.random.shuffle(idxs)
+  #print(idxs)
+
+  # apply crossovers 
+  numCrossOvers = np.int(np.min([numCrossOvers, numChildren/2]))
+  children=[]
+  for i in range(numCrossOvers):
+    # select paired alleles (idx1 will 'receive' idx2 info) 
+    idx1,idx2 = idxs[2*i], idxs[2*i+1]
+    #print("#############") 
+    #print(idx1,idx2) 
+
+    child1 = jobList[idx1]
+    child2 = jobList[idx2]
+    #print(child1) 
+    #print(child2) 
+    #print(child1['variedParm']) 
+    #print(child2['variedParm']) 
+    vD1 = child1['varDict']
+    vD2 = child2['varDict']
+    # overwrites child2-varied param in child1 with child2's value 
+    if child1['variedParm'] is not child2['variedParm']:
+      children.append(idx1)
+      val2 = vD2[ child2['variedParm'] ]
+      #print(val2)
+      vD1[ child2['variedParm'] ]  = val2
+    else:  # conflict, skip
+      #print("CLASH - skip") 
+      1
+    #print("New child",child1) 
+
+  # final job List 
+  print("%d children crossed over "%len(children), children)
+  #print("Final list",jobList)
 
 #
 #
@@ -287,13 +334,13 @@ def randParams(
                       'simulation':simulation,
                       'odeModel':odeModel,'varDict':varDict,'fixedParamDict':fixedParamDict,
                       'jobNum':ctr,'jobDuration':jobDuration, 'tsteps':tsteps,
-                      'outputList':outputList}
+                      'outputList':outputList,
+                      'variedParm':parameter}
           jobList.append( jobDict )
           ctr+=1
           ###CMTprint "JobList2: ", jobList
   
   # now selecting subset via reservoire sampling 
-  print("PKH need to pull this out as func for several var")
   N = numRandomDraws              
   sample = [];
   for i,line in enumerate(jobList): 
@@ -309,6 +356,14 @@ def randParams(
   for i,line in enumerate(jobList): 
      # old print line['jobNum'] 
      line['jobNum'] = i
+
+
+
+  # apply cross overs 
+  crossOvers = True
+  numCrossOvers=3
+  if crossOvers:
+    Crossovers(jobList,numCrossOvers)
 
 
 # Genetic algorithm that randomizes the provided parameters (1 for now), selects the solution that minimizes the error, and repeats this process for a given number of iterations
@@ -546,7 +601,7 @@ def test1():
     variedParamDict = variedParamDict,
     jobDuration = 3e3, # ignored right now 
     numRandomDraws = 10, 
-    numIters = 10,   
+    numIters = 5,    
     #sigmaScaleRate = 0.45,
     outputList = outputList,
     debug = True
