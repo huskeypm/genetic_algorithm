@@ -394,7 +394,7 @@ def fittingAlgorithm(
   trialParamVarDict = copy.copy( variedParamDict ) 
   trialParamVarDicts=[]
   for i in range(nParents):
-    trialParamVarDicts.append( copy.copy( variedParamDict ) ) 
+    trialParamVarDicts.append( copy.deepcopy( variedParamDict ) ) 
 
   iters = 0
   allErrors = []
@@ -405,6 +405,8 @@ def fittingAlgorithm(
   rejection = 0
   previousFitness = 1e9
   while iters < numIters and rejection<maxRejectionsAllowed:  
+      #print("Start") 
+      #print(trialParamVarDicts)
 
       ## Create 'master' varDict list
       iters += 1
@@ -416,19 +418,20 @@ def fittingAlgorithm(
       ###CMTprint "parmDict: " , parmDict
 
       #PKH need to allocate one per parent 
-      defaultVarDict = dict()
-      parmDict = trialParamVarDict 
+      #defaultVarDict = dict()
+      #parmDict = trialParamVarDict 
       defaultVarDicts = []
       parmDicts = []
       for i in range(nParents):
         defaultVarDicts.append(dict())
         parmDicts.append(trialParamVarDicts[i]) 
+        print("p%d"%i, trialParamVarDicts[i])
       
       #PKH populate one per parent 
-      for parameter,values in parmDict.items():
-          defaultVarDict[parameter] = values[0]  # default value
-          print("Inputs: ", parameter, values[0])
-          numVariedParams+=1
+      #for parameter,values in parmDict.items():
+      #    defaultVarDict[parameter] = values[0]  # default value
+      #    print("Inputs: ", parameter, values[0])
+      #    numVariedParams+=1
       
       for i in range(nParents):
         defaultVarDicti = defaultVarDicts[i]
@@ -440,8 +443,7 @@ def fittingAlgorithm(
 
 
       ## determine core count
-      print("RESCALE DRAWS BY PARENTS") 
-      numJobs = numRandomDraws # *numParams
+      numJobs = np.int(numRandomDraws/nParents) # *numParams
       numCores = np.min( [numCores, numJobs])
       print("Using %d cores for %d jobs"%(numCores,numJobs))
 
@@ -457,18 +459,19 @@ def fittingAlgorithm(
 
       ## randomizes multiple parametrs 
       #PKH do once per parent 
-      randParams(
-        simulation,
-        jobList,defaultVarDict,fixedParamDict,parmDict,tsteps,numRandomDraws,randomDrawAllIters,iters,sigmaScaleRate,distro,outputList)
-      print(len(jobList))
+      #randParams(
+      #  simulation,
+      #  jobList,defaultVarDict,fixedParamDict,parmDict,tsteps,numRandomDraws,randomDrawAllIters,iters,sigmaScaleRate,distro,outputList)
+      #print(len(jobList))
       jobList=[]
       for i in range(nParents):
+        numRandomDrawsi = np.int(numRandomDraws/nParents)
         defaultVarDicti = defaultVarDicts[i]
         parmDicti= parmDicts[i]
         randParams(
           simulation,
-          jobList,defaultVarDicti,fixedParamDict,parmDicti,tsteps,numRandomDraws,randomDrawAllIters,iters,sigmaScaleRate,distro,outputList)
-      print(len(jobList))
+          jobList,defaultVarDicti,fixedParamDict,parmDicti,tsteps,numRandomDrawsi,randomDrawAllIters,iters,sigmaScaleRate,distro,outputList)
+      print("njobs",len(jobList))
         
    
       ## Run jobs
@@ -555,11 +558,12 @@ def fittingAlgorithm(
       ###CMTprint "jobFitnes: " , jobFitnesses[jobIndex]
 
       # grab the job 'object' corresponding to that index
-      bestJob = jobList[ jobIndex ]
+      #bestJob = jobList[ jobIndex ]
       currentFitness = jobFitnesses[pandasIndex]
       print(jobIndices, type(jobList))
       bestJobs = []
-      for jobIdx in jobIndices:
+      for i,jobIdx in enumerate(jobIndices):
+        print("Dbl fit",i, jobFitnesses[ pandasSortedIndices[i] ] ) 
         bestJobs.append( jobList[ jobIdx ] )    
 
       ###CMTprint "bestJob: ", bestJob
@@ -571,7 +575,8 @@ def fittingAlgorithm(
       if currentFitness <= previousFitness:
 
         # get its input params/values
-        bestVarDict = bestJob[ 'varDict' ]
+        bestJobi = bestJobs[0]
+        bestVarDict = bestJobi[ 'varDict' ]
         print("bestVarDict: " , bestVarDict)
         print("currentFitness", currentFitness)
         previousFitness = currentFitness
@@ -582,13 +587,15 @@ def fittingAlgorithm(
 
         # update 'trialParamDict' with new values, [0] represents mean value of paramater
         #PKH do for each parent 
-        for myVariedParamKey, variedParamVal in bestVarDict.items():
+        #for myVariedParamKey, variedParamVal in bestVarDict.items():
           ###CMTprint myVariedParamKey, variedParamVal 
-          trialParamVarDict[ myVariedParamKey ][0]  = variedParamVal
+        #  trialParamVarDict[ myVariedParamKey ][0]  = variedParamVal
           # [1] to represent updating stdDev value
           # trialParamVarDict[ myVariedParam ][1]  = variedStdDevVal
 
         for i in range(nParents):
+          #print("iter") 
+          #print(trialParamVarDicts)
           trialParamVarDicti = trialParamVarDicts[i] 
           bestJobi = bestJobs[i] 
           bestVarDicti= bestJobi[ 'varDict' ]
@@ -596,6 +603,8 @@ def fittingAlgorithm(
           #parmDicti= parmDicts[i]
           for myVariedParamKey, variedParamVal in bestVarDicti.items():
             trialParamVarDicti[ myVariedParamKey ][0]  = variedParamVal
+
+          print("Parent rank %d"%i,trialParamVarDicti)
           
 
       else:
@@ -610,9 +619,12 @@ def fittingAlgorithm(
       #else:
           #errorsGood = False
           ###CMTprint "Error is not good, need to run another iteration."
+      #print("End")
+      #print(trialParamVarDicts) 
 
       #iters += 1
-      bestDrawAllIters.append(bestVarDict)       
+      bestJobi = bestJobs[0]
+      bestDrawAllIters.append( bestJobi[ 'varDict' ] ) 
 
       print("iter", iters, " out of", numIters)
       print("")
