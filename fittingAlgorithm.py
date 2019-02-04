@@ -298,6 +298,8 @@ def randParams(
   simulation,
   jobList,defaultVarDict,fixedParamDict,parmDict,tsteps,numRandomDraws,randomDrawAllIters,iters,sigmaScaleRate,distro,outputList):
   ctr=0
+  ctr = len(jobList)  # should start from last jobList
+  #print("ctr",ctr) 
   for parameter,values in parmDict.items():
   
       ## generate random pertubrations
@@ -315,7 +317,6 @@ def randParams(
       if distro=="lognormal":
         unif = np.random.normal(0,rescaledSigma,numRandomDraws)
         randomDraws = np.exp(unif) * mu
-  
   
       randomDraws = np.sort(randomDraws)
   
@@ -337,20 +338,27 @@ def randParams(
                       'outputList':outputList,
                       'variedParm':parameter}
           jobList.append( jobDict )
+          #print(ctr)
           ctr+=1
           ###CMTprint "JobList2: ", jobList
   
+  #print(jobList)
+  #for i, v in enumerate(jobList):
+  #  print("x", v['jobNum'])
   # now selecting subset via reservoire sampling 
   N = numRandomDraws              
-  sample = [];
-  for i,line in enumerate(jobList): 
-    ###CMTprint line['jobNum']
-    if i < N:
-      sample.append(line)
-    elif i >= N and random.random() < N/float(i+1):
-      replace = random.randint(0,len(sample)-1)
-      sample[replace] = line
-  jobList = sample 
+
+  # something stupid is happing with muiltiple parents/param
+  #sample = [];
+  #for i,line in enumerate(jobList): 
+  #  ###CMTprint line['jobNum']
+  #  if i < N:
+  #    sample.append(line)
+  #  elif i >= N and random.random() < N/float(i+1):
+  #    replace = random.randint(0,len(sample)-1)
+  #    sample[replace] = line
+  #jobList = sample 
+
   ###CMTprint "Print new" 
   # renumber job num for indexing later 
   for i,line in enumerate(jobList): 
@@ -436,6 +444,7 @@ def fittingAlgorithm(
       for i in range(nParents):
         defaultVarDicti = defaultVarDicts[i]
         parmDicti= parmDicts[i]
+        numVariedParams=0
         for parameter,values in parmDicti.items():
           defaultVarDicti[parameter] = values[0]  # default value
           print("Inputs: ", parameter, values[0])
@@ -443,19 +452,16 @@ def fittingAlgorithm(
 
 
       ## determine core count
-      numJobs = np.int(numRandomDraws/nParents) # *numParams
-      numCores = np.min( [numCores, numJobs])
-      print("Using %d cores for %d jobs"%(numCores,numJobs))
+      totNumRandomDraws = numRandomDraws*numVariedParams
+      #numJobs = np.int(numRandomDraws/nParents) # *numParams
+      numCores = np.min( [numCores, totNumRandomDraws] ) 
+      print("Using %d cores for %d jobs"%(numCores,totNumRandomDraws))
 
       ###CMTprint "outputList: ", outputList
       ## Create a list of jobs with randomized parameters
       # Here we create a much larger job list than we can actually use, so that we can randomly select a subset of which
       # This is mostly important for the multi-variable cases
       jobList = []
-      ## randomly distribute n numbers[scales] into m bins
-      print("Should probably rescale sigma by the tolerated error vs current error and only for selected params ") 
-      
-      
 
       ## randomizes multiple parametrs 
       #PKH do once per parent 
@@ -463,17 +469,19 @@ def fittingAlgorithm(
       #  simulation,
       #  jobList,defaultVarDict,fixedParamDict,parmDict,tsteps,numRandomDraws,randomDrawAllIters,iters,sigmaScaleRate,distro,outputList)
       #print(len(jobList))
-      jobList=[]
       for i in range(nParents):
         numRandomDrawsi = np.int(numRandomDraws/nParents)
+    
         defaultVarDicti = defaultVarDicts[i]
         parmDicti= parmDicts[i]
         randParams(
           simulation,
           jobList,defaultVarDicti,fixedParamDict,parmDicti,tsteps,numRandomDrawsi,randomDrawAllIters,iters,sigmaScaleRate,distro,outputList)
-      print("njobs",len(jobList))
+        #print("njobs",len(jobList))
+      # this value should be numRandomDraws*numParents 
+      #print(jobList)
         
-   
+    
       ## Run jobs
       if numCores > 1:
           print("Multi-threading")
@@ -548,9 +556,9 @@ def fittingAlgorithm(
       # find best job
       #PKH need to sort and collect nParents best 
       pandasSortedIndices = np.argsort( jobFitnesses ) 
-      print(pandasSortedIndices[0])
+      #nprint(pandasSortedIndices[0])
       pandasIndex = np.argmin( jobFitnesses )
-      print(pandasSortedIndices[0],pandasIndex)
+      #nprint(pandasSortedIndices[0],pandasIndex)
       pandasIndex = pandasSortedIndices[0]
       jobIndex = jobNums[ pandasIndex ]
       jobIndices =  jobNums[ pandasSortedIndices[0:nParents] ] 
@@ -560,10 +568,10 @@ def fittingAlgorithm(
       # grab the job 'object' corresponding to that index
       #bestJob = jobList[ jobIndex ]
       currentFitness = jobFitnesses[pandasIndex]
-      print(jobIndices, type(jobList))
+      #print(jobIndices, type(jobList))
       bestJobs = []
       for i,jobIdx in enumerate(jobIndices):
-        print("Dbl fit",i, jobFitnesses[ pandasSortedIndices[i] ] ) 
+        #print("Dbl fit",i, jobFitnesses[ pandasSortedIndices[i] ] ) 
         bestJobs.append( jobList[ jobIdx ] )    
 
       ###CMTprint "bestJob: ", bestJob
@@ -603,6 +611,8 @@ def fittingAlgorithm(
           #parmDicti= parmDicts[i]
           for myVariedParamKey, variedParamVal in bestVarDicti.items():
             trialParamVarDicti[ myVariedParamKey ][0]  = variedParamVal
+            #print("HACK") 
+            #trialParamVarDicti[ myVariedParamKey ][1]  = 0.
 
           print("Parent rank %d"%i,trialParamVarDicti)
           
@@ -669,7 +679,7 @@ def test1():
     yamlVarFile = "inputParams.yaml",
     variedParamDict = variedParamDict,
     jobDuration = 3e3, # ignored right now 
-    numRandomDraws = 10, 
+    numRandomDraws = 8,  
     numIters = 5,    
     #sigmaScaleRate = 0.45,
     outputList = outputList,
@@ -786,7 +796,7 @@ Fixing random seed
 
 
   # Run
-  numCores = np.min([numRandomDraws,maxCores])
+  numCores = np.min([numRandomDraws*len(variedParamDict.keys()),maxCores])
   results = trial(simulation,odeModel=odeModel,variedParamDict=variedParamDict,
                   outputList=outputList,fixedParamDict=fixedParamDict,
                   numCores=numCores,numRandomDraws=numRandomDraws,
