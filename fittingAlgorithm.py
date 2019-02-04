@@ -606,7 +606,8 @@ def fittingAlgorithm(
           # [1] to represent updating stdDev value
           # trialParamVarDict[ myVariedParam ][1]  = variedStdDevVal
 
-        for i in range(nParents):
+        #for i in range(nParents):
+        for i in range(len(defaultVarDicts)):
           #print("iter") 
           #print(trialParamVarDicts)
           trialParamVarDicti = trialParamVarDicts[i] 
@@ -715,7 +716,7 @@ def validation():
   )
 
   
-  refKon = 0.4165
+  refKon = 0.6012
   bestKon = results['bestFitDict']
   bestKon = bestKon['kon']
   assert(np.abs(refKon - bestKon) < 1e-3), "FAIL!"
