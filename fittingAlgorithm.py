@@ -296,7 +296,9 @@ def Crossovers(jobList,numCrossOvers=3
 #
 def randParams(
   simulation,
-  jobList,defaultVarDict,fixedParamDict,parmDict,tsteps,numRandomDraws,randomDrawAllIters,iters,sigmaScaleRate,distro,outputList):
+  jobList,defaultVarDict,fixedParamDict,parmDict,tsteps,numRandomDraws,randomDrawAllIters,iters,sigmaScaleRate,distro,outputList,
+  jobDuration,
+  odeModel=None): 
   ctr=0
   ctr = len(jobList)  # should start from last jobList
   #print("ctr",ctr) 
@@ -333,7 +335,8 @@ def randParams(
   
           jobDict =  {
                       'simulation':simulation,
-                      'odeModel':odeModel,'varDict':varDict,'fixedParamDict':fixedParamDict,
+                      'odeModel':odeModel,
+                       'varDict':varDict,'fixedParamDict':fixedParamDict,
                       'jobNum':ctr,'jobDuration':jobDuration, 'tsteps':tsteps,
                       'outputList':outputList,
                       'variedParm':parameter}
@@ -434,6 +437,8 @@ def fittingAlgorithm(
         defaultVarDicts.append(dict())
         parmDicts.append(trialParamVarDicts[i]) 
         print("p%d"%i, trialParamVarDicts[i])
+        if iters < 2:
+          break 
       
       #PKH populate one per parent 
       #for parameter,values in parmDict.items():
@@ -476,7 +481,7 @@ def fittingAlgorithm(
         parmDicti= parmDicts[i]
         randParams(
           simulation,
-          jobList,defaultVarDicti,fixedParamDict,parmDicti,tsteps,numRandomDrawsi,randomDrawAllIters,iters,sigmaScaleRate,distro,outputList)
+          jobList,defaultVarDicti,fixedParamDict,parmDicti,tsteps,numRandomDrawsi,randomDrawAllIters,iters,sigmaScaleRate,distro,outputList,jobDuration,odeModel)
         #print("njobs",len(jobList))
       # this value should be numRandomDraws*numParents 
       #print(jobList)
