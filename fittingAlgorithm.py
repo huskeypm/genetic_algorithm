@@ -446,7 +446,7 @@ def fittingAlgorithm(
       #    print("Inputs: ", parameter, values[0])
       #    numVariedParams+=1
       
-      for i in range(nParents):
+      for i in range(len(defaultVarDicts)):
         defaultVarDicti = defaultVarDicts[i]
         parmDicti= parmDicts[i]
         numVariedParams=0
@@ -474,7 +474,7 @@ def fittingAlgorithm(
       #  simulation,
       #  jobList,defaultVarDict,fixedParamDict,parmDict,tsteps,numRandomDraws,randomDrawAllIters,iters,sigmaScaleRate,distro,outputList)
       #print(len(jobList))
-      for i in range(nParents):
+      for i in range(len(defaultVarDicts)):
         numRandomDrawsi = np.int(numRandomDraws/nParents)
     
         defaultVarDicti = defaultVarDicts[i]
