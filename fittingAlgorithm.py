@@ -108,7 +108,7 @@ def workerParams(
     ###CMTprint "before runParamsFast"
     ## Launch job with parameter set
     returnDict = dict() # return results vector
-    simulation.simulate(varDict,returnDict) 
+    simulation.simulate(varDict,returnDict,jobDuration = dtn) 
 
     ###CMTprint "after runParamsFast"
 
@@ -684,7 +684,7 @@ def test1():
     simulation,
     yamlVarFile = "inputParams.yaml",
     variedParamDict = variedParamDict,
-    jobDuration = 3e3, # ignored right now 
+    jobDuration = 30e3, # [ms]
     numRandomDraws = 8,  
     numIters = 5,    
     #sigmaScaleRate = 0.45,
@@ -704,7 +704,7 @@ def validation():
     simulation,
     yamlVarFile = "inputParams.yaml",
     variedParamDict = variedParamListDefault,
-    jobDuration = 3e3, # ignored right now 
+    jobDuration = 25e3, # [ms] 
     numRandomDraws = 3,
     numIters = 10,
     sigmaScaleRate = 0.45,
@@ -784,8 +784,6 @@ Fixing random seed
     timeRange = [timeStart*ms_to_s,jobDuration*ms_to_s] # [s] range for data (It's because of the way GetData rescales the time series)
   else: 
      timeRange =[timeStart, tsteps[-1]]
-
-  print("timeRange: ", timeRange)
 
 
   ## Define the observables and the truth value
@@ -898,7 +896,7 @@ def DisplayFit(simulation,
   dummy, workerResults = workerParams(jobDict,skipProcess=True, verbose=True)
 
   # cludgy way of plotting result
-  for key in results['outputList'].keys():
+  for key in results['outputList'].keys():   
     1
   #key = outputList.keys()[0]
   obj= outputList[key]

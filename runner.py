@@ -29,7 +29,8 @@ class Runner():
   def simulate(
     self, 
     varDict=None,        # dictionary of parameters to be used for simulation
-    returnDict=dict()    # dictionary output to be returned by simulation
+    returnDict=dict(),    # dictionary output to be returned by simulation
+    jobDuration = 25e3   # [ms]
     ):
     if varDict is None:
       varDict = self.params; 
@@ -41,7 +42,9 @@ class Runner():
    
   
     # range is in [s]
-    ts = np.linspace(0,10,1000)
+    ms_to_s = 1e-3
+    ts = np.linspace(0,jobDuration*1e-3,1000)
+    print(ts[-1])
     y0s = [0.3,0,1]
     ys = odeint(self.dydt,y0s,ts,args=(varDict,))
     #ys = np.zeros([5,5]) 
