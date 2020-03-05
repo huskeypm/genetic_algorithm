@@ -26,7 +26,13 @@ variedParamListDefault= {
 ## Default structure for observables to be 'scored' by genetic algorithm
 class OutputObj:
     #def __init__(self,name,mode):
-    def __init__(self,name,mode,timeRange,truthValue,timeInterpolations= None ):
+    def __init__(self,
+            name, # Name for measurable
+            mode, # type of comparison [mean, etc]
+            timeRange, # time interval during which to assess measurable
+            truthValue, # scalar/array 'truth' values
+            timeInterpolations= None ): # scalar/array where truth value occurs
+
       self.name = name
       self.mode = mode
       self.timeRange = np.array(timeRange) #[5e4,10e4]  # NEED TO ADD
@@ -661,6 +667,66 @@ def fittingAlgorithm(
   #return myDataFrame
   return randomDrawAllIters, bestDrawAllIters,previousFitness
 
+def test3():
+  simulation = runner.Runner(),
+  yamlVarFile = "inputParams.yaml",
+  testState = "Cai",         
+  # parameters to vary 
+  variedParamDict = {
+    "kon":  [0.5,0.2],         
+    "koff":  [5.0,0.2],         
+    },
+
+  # get trial simulation results 
+  returnData = []
+  for i in range(2):
+    varDict={
+            'kon':0.4+i*0.1,'koff':4.4}
+
+    returnDict=simulate(
+      varDict=varDict,        # dictionary of parameters to be used for simulation
+ #   returnDict=dict(),    # dictionary output to be returned by simulation
+      jobDuration = 25e3   # [ms]
+    ):
+
+    cai = analyze.GetData('Cai',returnDict['data'])
+    returnData.append( cai )
+    
+
+  if 1:
+    raise RuntimeError("DSF")
+    # once above works, do
+    traces = cellDetect()
+    foreach trace in traces:
+        outputObj=outPutList["Cai"]
+        outputObj.vals = cai
+        outputObj.ts   = ts   
+
+    results.cellNum=1
+    allResults.append(results)
+    make plots with cell number, legend
+
+  timeRange = [0, 2] # where to measure 
+  vals = cai
+  outputList= { 
+    #"Cai":OutputObj("Cai","val_vs_time",[  0, 2],
+    #[1,0.5,0.15],timeInterpolations=[  0,1,2]) # check that interpolated values at 0, 100, 200 are 1, 0.5 ...
+    "Cai":OutputObj("Cai","val_vs_time",timeRange,
+    vals,timeInterpolations=ts) # check that interpolated values at 0, 100, 200 are 1, 0.5 ...
+    }
+
+  results = run(
+    simulation,
+    yamlVarFile = yamlVarFile,            
+    variedParamDict = variedParamDict,
+    jobDuration = 30e3, # [ms]
+    numRandomDraws = 8,  
+    numIters = 5,    
+    #sigmaScaleRate = 0.45,
+    outputList = outputList,
+    debug = True
+)
+
 def test1():
   # parameters to vary 
   stddev = 0.2
@@ -991,11 +1057,6 @@ import sys
 #
 ##################################
 
-#
-# ROUTINE
-#
-def doit(fileIn):
-  1
 
 
 #
@@ -1056,8 +1117,11 @@ if __name__ == "__main__":
     if(arg=="-validation"):
       validation()
       quit()
-    if(arg=="-test1"):
+    elif(arg=="-test1"):
       test1()
+      quit()
+    elif(arg=="-test2"):
+      test2()
       quit()
 
     #if(arg=="-odeModel"):
