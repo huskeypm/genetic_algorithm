@@ -16,14 +16,12 @@ import fittingAlgorithm as fA
 import runner
 from fittingAlgorithm import OutputObj
 
-simulation = runner.Runner()
-varDictDflt = simulation.params.copy()
 testState = "Cai"         
-timeDur = 1e3
 numCells = 2
 
 # generates data for multiple runs of simulator 
 def GenerateData(
+        jobDuration=1e3, # duration of simulation
         simulation = None,
         yamlFile = None
         ): 
@@ -32,23 +30,25 @@ def GenerateData(
       import runner 
       simulation = runner.Runner()
 
+  varDictDflt = simulation.params.copy()
   recordedData = []
   
+  import random
   for i in range(numCells):
     # default parameters for model 
     varDicti = varDictDflt.copy()
-    varDicti["kon"]+= 0.2*np.random.randn(1)
-    varDicti["koff"]+= 0.2*np.random.randn(1)
+    # can iterate through jeys to make random 
+    randKey = random.choice(list(varDicti))
+    varDicti[randKey]+= 0.02*np.random.randn(1)
     
     # place holder/perform simulation 
     returnDict = dict() # return results vector
-    print("WARNING: should also pass in yamlfile here too") 
-    simulation.simulate(varDicti,returnDict,jobDuration = timeDur) 
+    simulation.simulate(varDicti,returnDict,jobDuration = jobDuration) 
   
     ## do output processing
     data = returnDict['data']
     tRef = data['t']*1e3 # turn [s] back to [ms]
-    #print(timeDur)
+    #print(jobDuration)
     caiRef = data[testState] + 0.005*np.random.randn( np.shape(tRef)[0] )
   
     plt.plot(tRef,caiRef)
@@ -65,30 +65,35 @@ def GenerateData(
 
 def FitData(
         recordedData,
+        jobDuration=1e3, # duration of simulation
         simulation=None,      
-        yamlFile = None
+        yamlFile = None,
+        variedParamDict = None,
+        numRandomDraws = 2,
+        numIters = 2
         ): 
 
   if simulation is None:
       import runner 
       simulation = runner.Runner()
-  import analyze
-  
-  #cellNum = 0
-  #recordedDatai = recordedData[ cellNum ]
-  numRandomDraws = 10
-  numIters = 5
-  numRandomDraws = 2
-  numIters = 2
-  
-  for cellNum in range(numCells):
-      recordedDatai = recordedData[ cellNum ]
-      
-      # parameters to vary/initial guesses
+
+  # parameters to vary/initial guesses
+  if variedParamDict is None:
       variedParamDict = {
           "kon":  [0.5,0.2],         
           "koff":  [1.5,0.2],         
       }
+  import analyze
+  
+  #cellNum = 0
+  #recordedDatai = recordedData[ cellNum ]
+  #numRandomDraws = 10
+  #numIters = 5
+  
+  numCells = np.shape( recordedData )[0]
+  for cellNum in range(numCells):
+      recordedDatai = recordedData[ cellNum ]
+      
       timeRange = [0,9] # in [s]
       
       # what we are fitting to 
@@ -106,7 +111,7 @@ def FitData(
           simulation,
           yamlVarFile = yamlFile,                 
           variedParamDict = variedParamDict,
-          jobDuration = timeDur, # [ms]
+          jobDuration = jobDuration, # [ms]
           numRandomDraws = numRandomDraws,  
           numIters = numIters,    
           #sigmaScaleRate = 0.45,
