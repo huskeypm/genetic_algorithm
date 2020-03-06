@@ -45,7 +45,7 @@ class Runner():
     # range is in [s]
     ms_to_s = 1e-3
     ts = np.linspace(0,jobDuration*1e-3,1000)
-    print(ts[-1])
+    #print(ts[-1])
     y0s = [0.3,0,1]
     ys = odeint(self.dydt,y0s,ts,args=(varDict,))
     #ys = np.zeros([5,5]) 
