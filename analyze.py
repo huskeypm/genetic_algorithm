@@ -17,7 +17,8 @@ import re
 
 # loads data stored in ode object
 # returns a single array with quantity of interest (valsIdx) 
-# which is the time series of the idxName 
+# which is the time series of the idxName  
+# and the time (.t)
 def GetData(data,idxName):
     #print "getting data" 
     datac = empty()
