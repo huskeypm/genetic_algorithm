@@ -401,7 +401,8 @@ def fittingAlgorithm(
   sigmaScaleRate = 1., # rate at which sigma is reduced by iteration (larger values, faster decay) 
   maxRejectionsAllowed=3,  # number of rejected steps in a row before exiting alg. 
   numIters = 10,
-  distro = 'lognormal' # distribution with which we select new parameters
+  distro = 'lognormal', # distribution with which we select new parameters
+  verbose=2
   ):
 
   #PKH adding pseudocode for multiple parents
@@ -522,7 +523,7 @@ def fittingAlgorithm(
           #errorsGood_array.append([myDataFrame.index[i]])
           ###CMTprint myDataFrame.index[i]
           ###CMTprint myDataFrame.loc[myDataFrame.index[i],'jobNum']
-
+          
           # score 'fitnesss' based on the squared error wrt each output parameter
           fitness = 0.0
           for key,obj in outputList.items():
@@ -539,7 +540,8 @@ def fittingAlgorithm(
               error = np.sum((result - obj.truthValue) ** 2)
               normFactor = np.sum(obj.truthValue ** 2)
               normError = np.sqrt(error/normFactor) 
-              print("result: ", result, "truthValue: ", obj.truthValue)
+              if verbose>=2:
+                print("result: ", result, "truthValue: ", obj.truthValue)
               #allErrors[iters-1].append(error)
 
 
@@ -562,7 +564,7 @@ def fittingAlgorithm(
       #
       print("myDataFrame: ")
       print(myDataFrame)
-
+      
       print("jobFitnesses: ", jobFitnesses)
       # find best job
       #PKH need to sort and collect nParents best 
@@ -663,7 +665,7 @@ def fittingAlgorithm(
 
   ## push data into a pandas object for later analysis
   #myDataFrame = PandaData(jobOutputs,csvFile="example.csv")
-
+  
   #return myDataFrame
   return randomDrawAllIters, bestDrawAllIters,previousFitness
 
@@ -687,7 +689,7 @@ def test3():
       varDict=varDict,        # dictionary of parameters to be used for simulation
  #   returnDict=dict(),    # dictionary output to be returned by simulation
       jobDuration = 25e3   # [ms]
-    ):
+    )
 
     cai = analyze.GetData('Cai',returnDict['data'])
     returnData.append( cai )
@@ -697,14 +699,14 @@ def test3():
     raise RuntimeError("DSF")
     # once above works, do
     traces = cellDetect()
-    foreach trace in traces:
+    for trace in traces:
         outputObj=outPutList["Cai"]
         outputObj.vals = cai
         outputObj.ts   = ts   
 
     results.cellNum=1
     allResults.append(results)
-    make plots with cell number, legend
+    print("make plots with cell number, legend") 
 
   timeRange = [0, 2] # where to measure 
   vals = cai
@@ -744,7 +746,7 @@ def test1():
     [1,0.5,0.15],timeInterpolations=[  0,1,2]) # check that interpolated values at 0, 100, 200 are 1, 0.5 ... 
   }
 
-  testState = "Cai"          
+  #testState = "Cai"          
   simulation = runner.Runner()
   results = run(
     simulation,
@@ -818,6 +820,7 @@ def run(
   yamlVarFile = None,
   outputYamlFile = None,
   debug = False,
+  verboseLevel = 2, # show everything [2], show a bit [1]
   distro = 'lognormal' # distribution with which we select new parameters
 ):
 
@@ -871,7 +874,9 @@ Fixing random seed
                   outputList=outputList,fixedParamDict=fixedParamDict,
                   numCores=numCores,numRandomDraws=numRandomDraws,
                   jobDuration=jobDuration,tsteps=tsteps,
-                  numIters=numIters,sigmaScaleRate=sigmaScaleRate,fileName=fileName,distro=distro)
+                  numIters=numIters,sigmaScaleRate=sigmaScaleRate,
+                  fileName=fileName,distro=distro,
+                  verbose=verboseLevel)
 
   if outputYamlFile is not None:
     OutputOptimizedParams(results['bestFitDict'],originalYamlFile=yamlVarFile,outputYamlFile=outputYamlFile)
@@ -894,7 +899,8 @@ def trial(
   numIters=2,
   sigmaScaleRate = 1.0,
   fileName = None,
-  distro = 'lognormal' # distribution with which we select new parameters
+  distro = 'lognormal', # distribution with which we select new parameters
+  verbose =2
   ):
   odeModel = None 
 
@@ -912,7 +918,9 @@ def trial(
     odeModel,keys, variedParamDict=variedParamDict,fixedParamDict=fixedParamDict,
       numCores=numCores, numRandomDraws=numRandomDraws, 
       jobDuration=jobDuration, tsteps=tsteps,
-      outputList=outputList,numIters=numIters, sigmaScaleRate=sigmaScaleRate,distro=distro)
+      outputList=outputList,numIters=numIters, sigmaScaleRate=sigmaScaleRate,
+      distro=distro,
+      verbose=verbose)
   bestFitDict =  bestDraws[-1]
   print("Best fit parameters", bestFitDict) 
 
