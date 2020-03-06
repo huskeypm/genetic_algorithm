@@ -7,8 +7,9 @@ import numpy as np
 
 class Runner():
   def __init__(self):
-    self.params={'kon': 1,
-        'koff': 1,
+    self.params={
+        'kon': 0.1,
+        'koff': 0.1,
         'bMax': 5,
         'scale':1}       
 

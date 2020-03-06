@@ -26,8 +26,9 @@ python3 fittingAlgorithm.py -run -myVariedParam kon -variedParamTruthVal 2.0 -fi
 ## To set up for new cases 
 - Ingredients 
 -- runner (runner.py) is the wrapper for your code. 
--- analysis (analysis.py) is the wrapper for analysis of your code's results
+-- analysis (analysis.py) contains many analyses for comparing runner results (curves, etc) with your fitting data
 -- inputParams.yaml  - default parameters for your code 
+-- define outputList object for your values you want to fit to (e.g. from expt) 
 
 - To interface the GA with your code, you need to include a function called
 simulate() in your code that expects a dictionary of parameters and 
