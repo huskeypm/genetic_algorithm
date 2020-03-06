@@ -18,13 +18,20 @@ from fittingAlgorithm import OutputObj
 
 simulation = runner.Runner()
 varDictDflt = simulation.params.copy()
-yamlVarFile = "inputParams.yaml"
 testState = "Cai"         
 timeDur = 1e3
 numCells = 2
 
 # generates data for multiple runs of simulator 
-def GenerateData(): 
+def GenerateData(
+        simulation = None,
+        yamlFile = None
+        ): 
+
+  if simulation is None:
+      import runner 
+      simulation = runner.Runner()
+
   recordedData = []
   
   for i in range(numCells):
@@ -35,6 +42,7 @@ def GenerateData():
     
     # place holder/perform simulation 
     returnDict = dict() # return results vector
+    print("WARNING: should also pass in yamlfile here too") 
     simulation.simulate(varDicti,returnDict,jobDuration = timeDur) 
   
     ## do output processing
@@ -55,7 +63,15 @@ def GenerateData():
 # In[21]:
 
 
-def FitData(recordedData): 
+def FitData(
+        recordedData,
+        simulation=None,      
+        yamlFile = None
+        ): 
+
+  if simulation is None:
+      import runner 
+      simulation = runner.Runner()
   import analyze
   
   #cellNum = 0
@@ -85,10 +101,10 @@ def FitData(recordedData):
       }        
   
       # actual fitting process 
-      simulation = runner.Runner()
+      #simulation = runner.Runner()
       results = fA.run(
           simulation,
-          yamlVarFile = "inputParams.yaml",
+          yamlVarFile = yamlFile,                 
           variedParamDict = variedParamDict,
           jobDuration = timeDur, # [ms]
           numRandomDraws = numRandomDraws,  
@@ -118,8 +134,12 @@ def FitData(recordedData):
       plt.gcf().savefig(title+".png")
 
 def doit():      
-  data = GenerateData()
-  FitData(data) 
+  import runner 
+  simulation = runner.Runner()
+  yamlFile = "inputParams.yaml"
+
+  data = GenerateData(simulation,yamlFile)
+  FitData(data,simulation,yamlFile) 
 
 #!/usr/bin/env python
 import sys
@@ -175,6 +195,7 @@ if __name__ == "__main__":
     if(arg=="-test"):
       #arg1=sys.argv[i+1] 
       doit()#(arg1)
+      quit()
   
 
 
