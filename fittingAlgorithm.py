@@ -9,6 +9,8 @@ import numpy as np
 import copy
 import pandas as pd
 import matplotlib.pylab as plt
+import imp
+from fittingUtil import InterpolateData
 
 # USER EDITS THESE
 import runner # simulation engine                 
