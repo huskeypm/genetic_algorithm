@@ -1,5 +1,5 @@
 """
-Prototype for automated fitting 
+Prototype for automated fitting for multiple cells 
 """
 import numpy as np
 import matplotlib.pylab as plt
@@ -58,17 +58,18 @@ def GenerateData(
   return recordedData
   
   
-# ### Now we fit each transient separately 
-
-# In[21]:
-
-
+#
+# Now we fit each transient separately 
+# using the genetic algorithm
+# 
 def FitData(
         recordedData,
         jobDuration=1e3, # duration of simulation
         simulation=None,      
         yamlFile = None,
         variedParamDict = None,
+        outputList = None,
+        testState = None, # if not none, it contains the data key you want to print (like 'Cai') 
         numRandomDraws = 2,
         numIters = 2
         ): 
@@ -83,8 +84,19 @@ def FitData(
           "kon":  [0.5,0.2],         
           "koff":  [1.5,0.2],         
       }
+
+  if outputList is None:
+      timeRange = [0,9] # in [s]
+      # what we are fitting to 
+      outputList= { 
+      #"Cai":OutputObj("Cai","val_vs_time",[  0, 2],
+      #[1,0.5,0.15],timeInterpolations=[  0,1,2]) # check that interpolated values at 0, 100, 200 are 1, 0.5 ...
+          "Cai":OutputObj("Cai","val_vs_time",timeRange,
+                          recordedDatai['Cai'],
+                          timeInterpolations=recordedDatai['t']) # check that interpolated values at 0, 100, 200 are 1, 0.5 ...
+      }        
+
   import analyze
-  
   #cellNum = 0
   #recordedDatai = recordedData[ cellNum ]
   #numRandomDraws = 10
@@ -94,17 +106,6 @@ def FitData(
   for cellNum in range(numCells):
       recordedDatai = recordedData[ cellNum ]
       
-      timeRange = [0,9] # in [s]
-      
-      # what we are fitting to 
-      outputList= { 
-      #"Cai":OutputObj("Cai","val_vs_time",[  0, 2],
-      #[1,0.5,0.15],timeInterpolations=[  0,1,2]) # check that interpolated values at 0, 100, 200 are 1, 0.5 ...
-          "Cai":OutputObj("Cai","val_vs_time",timeRange,
-                          recordedDatai['Cai'],
-                          timeInterpolations=recordedDatai['t']) # check that interpolated values at 0, 100, 200 are 1, 0.5 ...
-      }        
-  
       # actual fitting process 
       #simulation = runner.Runner()
       results = fA.run(
@@ -125,18 +126,18 @@ def FitData(
       fits = results['bestFitDict']
       
       #print(fits)  
-      plt.figure()
-      testState="Cai"
-      data = analyze.GetData(results['data'],testState)
-      #ts = analyze.GetData(results['data'],'t')
-      plt.plot(data.t,data.valsIdx,label="fit"+str(fits))#str(fits))
-      ts = recordedDatai['t']*1e-3
-      cai = recordedDatai['Cai']
-      plt.plot(ts,cai,label="input")
-      title=testState+"%d"%cellNum
-      plt.title(title)
-      plt.legend()
-      plt.gcf().savefig(title+".png")
+      if testState is not None:
+        plt.figure()
+        data = analyze.GetData(results['data'],testState)
+        #ts = analyze.GetData(results['data'],'t')
+        plt.plot(data.t,data.valsIdx,label="fit"+str(fits))#str(fits))
+        ts = recordedDatai['t']*1e-3
+        datai = recordedDatai[testState] 
+        plt.plot(ts,datai,label="input")
+        title=testState+"%d"%cellNum
+        plt.title(title)
+        plt.legend()
+        plt.gcf().savefig(title+".png")
 
 def doit():      
   import runner 
