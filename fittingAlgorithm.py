@@ -31,16 +31,17 @@ class OutputObj:
     def __init__(self,
             name, # Name for measurable
             mode, # type of comparison [mean, etc]
-            timeRange, # time interval during which to assess measurable
+            timeRange, # [ms], time interval during which to assess measurable
             truthValue, # scalar/array 'truth' values
-            timeInterpolations= None ): # scalar/array where truth value occurs [?? ms ??] 
+            timeInterpolations= None ): # scalar/array where truth value occurs [ms] 
 
       self.name = name
       self.mode = mode
-      self.timeRange = np.array(timeRange) #[5e4,10e4]  # NEED TO ADD
+      self.timeRange = np.array(timeRange) #[5e4,10e4]  # [ms], NEED TO ADD
       self.timeInterpolations= np.copy(timeInterpolations)# if ndarray, will interpolate the values of valueTimeSeries at the provided times
       if isinstance(timeInterpolations,np.ndarray):
-        self.timeInterpolations*=ms_to_s
+        #self.timeInterpolations*=ms_to_s
+        1 
       self.truthValue = np.array(truthValue,dtype=np.float)
       self.result = None
 
@@ -745,7 +746,7 @@ def test1():
     #"Cai":OutputObj("Cai","mean",[8,10], # in [s]
     # 0.1),          # value you want 
     "Nai":OutputObj("Nai","val_vs_time",[  0, 2],
-    [1,0.5,0.15],timeInterpolations=[  0,1,2]) # check that interpolated values at 0, 100, 200 are 1, 0.5 ... 
+    [1,0.5,0.15],timeInterpolations=[  0,1,2]) # [ms] check that interpolated values at 0, 100, 200 are 1, 0.5 ... 
   }
 
   #testState = "Cai"          

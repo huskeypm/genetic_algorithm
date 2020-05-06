@@ -29,15 +29,16 @@ def GetData(data,idxName):
 
 ### taken from fitter.py/analyzeODE.py, used to process data made to put into panda format at the end.
 # Most of the original implementation has been scrapped
+from scipy import interpolate
 def ProcessDataArray(
       dataSub,
       mode,
-      timeRange=[0,1e3],
-      timeInterpolations=None,   # if ndarray, will interpolate the values of valueTimeSeries at the provided times
+      timeRange=[0,1e3],         # [ms]
+      timeInterpolations=None,   # [ms] array, will interpolate the values of valueTimeSeries at the provided times
       key=None):
 
       
-      # Time is listed in seconds [s] EXCEPT if user provided steps (tsteps) were used. 
+      # Time is listed in seconds [ms] 
       # in this case, the t's are in the same units as tsteps 
     #   print('timeRange', timeRange)
       timeSeries = dataSub.t
@@ -59,13 +60,17 @@ def ProcessDataArray(
       elif mode == "mean":
           result = np.mean(valueTimeSeries)
       elif mode == "val_vs_time":
-          #print "time",timeInterpolations 
-          #print "pts", timeSeries, valueTimeSeries
-        #   print('timeInterpolations',timeInterpolations)
-        #   print('timeSeries',timeSeries)
-        #   print('valueTimeSeries',valueTimeSeries)
-          result = np.interp(timeInterpolations,timeSeries,valueTimeSeries)
-          #print "interp", result     
+          #print('timeInterpolations',timeInterpolations)
+          #print('timeSeries',timeSeries)
+          #print('valueTimeSeries',valueTimeSeries)
+          # interps predicted time values onto time points in expt (truth) data
+          #result = np.interp(timeInterpolations,timeSeries,valueTimeSeries,
+          #        fill_value='extrapolate') # can be dangerous....
+          f = interpolate.interp1d(timeSeries,valueTimeSeries,
+                  fill_value='extrapolate') # can be dangerous....
+          result = f(timeInterpolations)                                     
+          #print("interp", result )   
+          #quit()
 
       else:
           raise RuntimeError("%s is not yet implemented"%output.mode)
