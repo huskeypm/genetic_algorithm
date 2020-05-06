@@ -33,7 +33,7 @@ class OutputObj:
             mode, # type of comparison [mean, etc]
             timeRange, # time interval during which to assess measurable
             truthValue, # scalar/array 'truth' values
-            timeInterpolations= None ): # scalar/array where truth value occurs
+            timeInterpolations= None ): # scalar/array where truth value occurs [?? ms ??] 
 
       self.name = name
       self.mode = mode
@@ -822,6 +822,7 @@ def run(
   yamlVarFile = None,
   outputYamlFile = None,
   debug = False,
+  fixedParamDict = None, # in case fixedParamDict s.b. passed in 
   verboseLevel = 2, # show everything [2], show a bit [1]
   distro = 'lognormal' # distribution with which we select new parameters
 ):
@@ -839,7 +840,8 @@ def run(
   
 
   # open yaml file with variables needed for sim
-  fixedParamDict = YamlToParamDict(yamlVarFile)
+  if fixedParamDict is None:
+    fixedParamDict = YamlToParamDict(yamlVarFile)
 
   # debug mode
   if debug:
