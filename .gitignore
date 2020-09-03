@@ -1,0 +1,5 @@
+# Output PNG files
+*.png
+
+# Ignore any visual studio code user preferences
+.vscode/
