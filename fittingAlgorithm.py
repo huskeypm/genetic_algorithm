@@ -27,27 +27,21 @@ variedParamListDefault= {
 
 ## Default structure for observables to be 'scored' by genetic algorithm
 class OutputObj:
-    #def __init__(self,name,mode):
     def __init__(self,
             name, # Name for measurable
             mode, # type of comparison [mean, etc]
             timeRange, # [ms], time interval during which to assess measurable
             truthValue, # scalar/array 'truth' values
             timeInterpolations= None ): # scalar/array where truth value occurs [ms] 
-
       self.name = name
       self.mode = mode
-      self.timeRange = np.array(timeRange) #[5e4,10e4]  # [ms], NEED TO ADD
+      self.timeRange = np.array(timeRange) # [ms], NEED TO ADD
       self.timeInterpolations= np.copy(timeInterpolations)# if ndarray, will interpolate the values of valueTimeSeries at the provided times
       if isinstance(timeInterpolations,np.ndarray):
         #self.timeInterpolations*=ms_to_s
         1 
       self.truthValue = np.array(truthValue,dtype=np.float)
       self.result = None
-
-#outputs = ["Cai","Nai"]
-#outputListDefault = { "Nai":OutputObj("Nai","mean"),
-#                      "Cai":OutputObj("Cai","max")}
 
 ## Format:
 # Key: state name, metric of comparison, time range over which to compute metric, truth value
@@ -81,11 +75,8 @@ def workerParams(
 
     print("Worker bee %d, Job %d "%(getpid(),jobNum))
 
-    ###CMTprint "varDict: ", varDict
-
     outputList = jobDict['outputList']
-    #print("outputList: ", outputList)
-    ###CMTprint "outputListDefault: ", outputListDefault
+
     if outputList == None:
         outputList = outputListDefault
         print("No outputList given, using outputListDefault.") 
@@ -95,8 +86,6 @@ def workerParams(
       for key in variedParamDict:
         fixedParamDict.pop(key, None)
 
-    #print(fixedParamDict)
-
     # create new var Dict with all parameters
     varDict = dict()
     for key,val in variedParamDict.items() :
@@ -105,34 +94,22 @@ def workerParams(
       for key,val in fixedParamDict.items() :
         varDict[key]=val
     if verbose:
-      #for key,val in varDict.iteritems() :
       print("Running with these varied parameters:")
       for key,val in variedParamDict.items() :
         print("  ",key,val)
         1
 
-    #quit()
-
     ## create varDict for runParams
-    ###CMTprint "before runParamsFast"
     ## Launch job with parameter set
     returnDict = dict() # return results vector
     simulation.simulate(varDict,returnDict,jobDuration = dtn) 
 
-    ###CMTprint "after runParamsFast"
-
     ## do output processing
     data = returnDict['data']
-    ###CMTprint "DATA: ", data
     if skipProcess:
       outputResults = data
     else:
-      # print('data',data)
-      # print('outputList',outputList)
       outputResults = ProcessWorkerOutputs(data,outputList,tag=jobNum)
-    #if verbose:
-    #  for key,val in outputResults.iteritems() :
-    #    print "  ",key,val.result
 
     ## package additional useful information
     results = empty()
@@ -140,7 +117,6 @@ def workerParams(
     results.pid = getpid()
     results.jobDict = jobDict
     results.jobNum = jobNum
-
 
     return jobNum,results
 
@@ -151,24 +127,13 @@ See OutputObj class definition and ProcessDataArray function
 """
 def ProcessWorkerOutputs(data,outputList, tag=99):
   outputResults = {}
-  ###CMTprint "outputList: ", outputList
   for key,obj in outputList.items():
-    ###CMTprint "key: ", key, "obj: ", obj
-    ###CMTprint "outputList: ", outputList
-    ###CMTprint "in the for loop"
-    ###CMTprint "obj.timeRange: ", obj.timeRange
     dataSub = analyze.GetData(data, obj.name)
-    #print('dataSub', dataSub)
 
-    ###CMTprint "dataSub: ", dataSub
-    ###CMTprint "dataSub.valsIdx: ", dataSub.valsIdx
-    ###CMTprint "damax",np.max(dataSub.t)
     result = analyze.ProcessDataArray(dataSub,obj.mode,obj.timeRange,obj.timeInterpolations,key=key)
 
-    #output.result = result
     resultObj = copy.copy(obj)
     resultObj.result = result
-    #outputResults.append( resultObj )
     outputResults[key]=resultObj
 
   return outputResults
@@ -188,8 +153,6 @@ def YamlToParamDict(yamlVarFile):
     # converting to float since yamml doesnt know science notation
     for key, val in fixedParamDict.items():
       fixedParamDict[key] = np.float(val)
-      #print(key, type(val))
-      #print(key, type(fixedParamDict[key]), fixedParamDict[key])
   return fixedParamDict
 
 
@@ -241,13 +204,11 @@ def StoreJob(job1):
     # pull out inputs
     varDict = job1.jobDict['varDict']
     for param,value in varDict.items():
-        ###CMTprint param, value
         pandasDict[param] = value
 
     # pull out its results vector
     outputResults = job1.outputResults
     for output,result in outputResults.items():
-        ###CMTprint output, result.result
         pandasDict[output] = result.result
 
     return pandasDict
@@ -273,31 +234,22 @@ def Crossovers(jobList,numCrossOvers=3
   for i in range(numCrossOvers):
     # select paired alleles (idx1 will 'receive' idx2 info) 
     idx1,idx2 = idxs[2*i], idxs[2*i+1]
-    #print("#############") 
-    #print(idx1,idx2) 
 
     child1 = jobList[idx1]
     child2 = jobList[idx2]
-    #print(child1) 
-    #print(child2) 
-    #print(child1['variedParm']) 
-    #print(child2['variedParm']) 
+
     vD1 = child1['varDict']
     vD2 = child2['varDict']
     # overwrites child2-varied param in child1 with child2's value 
     if child1['variedParm'] is not child2['variedParm']:
       children.append(idx1)
       val2 = vD2[ child2['variedParm'] ]
-      #print(val2)
       vD1[ child2['variedParm'] ]  = val2
     else:  # conflict, skip
-      #print("CLASH - skip") 
       1
-    #print("New child",child1) 
 
   # final job List 
   print("%d children crossed over "%len(children), children)
-  #print("Final list",jobList)
 
 #
 #
@@ -310,17 +262,14 @@ def randParams(
   odeModel=None): 
   ctr=0
   ctr = len(jobList)  # should start from last jobList
-  #print("ctr",ctr) 
   for parameter,values in parmDict.items():
   
       ## generate random pertubrations
       # draw from normal distribution
       print("Sigm needs to be specific to each var") 
       mu,sigma = values
-      ###CMTprint "sigma: ", sigma
       #rescaledSigma = sigma/(sigmaScaleRate * iters)
       rescaledSigma = sigma*np.exp(-sigmaScaleRate * (iters-1))
-      ###CMTprint "rescaledSigma: ", rescaledSigma, " rate ", sigmaScaleRate
       #rescaledSigma = sigma
       # distro = "lognormal"
       if distro=="normal":
@@ -332,12 +281,9 @@ def randParams(
       randomDraws = np.sort(randomDraws)
   
       # create a list of jobs
-      ###CMTprint parameter, " random draws:"
-      ###CMTprint randomDraws
       randomDrawAllIters.append(randomDraws)
       #listN = [{parameter:val,'jobNum':i} for i,val in enumerate(randomDraws)]
       #jobList+=listN
-      ###CMTprint "JobList: ", jobList
       for val in randomDraws:
           varDict = copy.copy(defaultVarDict)
           varDict[parameter] = val
@@ -350,20 +296,14 @@ def randParams(
                       'outputList':outputList,
                       'variedParm':parameter}
           jobList.append( jobDict )
-          #print(ctr)
           ctr+=1
-          ###CMTprint "JobList2: ", jobList
   
-  #print(jobList)
-  #for i, v in enumerate(jobList):
-  #  print("x", v['jobNum'])
   # now selecting subset via reservoire sampling 
   N = numRandomDraws              
 
   # something stupid is happing with muiltiple parents/param
   #sample = [];
   #for i,line in enumerate(jobList): 
-  #  ###CMTprint line['jobNum']
   #  if i < N:
   #    sample.append(line)
   #  elif i >= N and random.random() < N/float(i+1):
@@ -371,20 +311,17 @@ def randParams(
   #    sample[replace] = line
   #jobList = sample 
 
-  ###CMTprint "Print new" 
+
   # renumber job num for indexing later 
   for i,line in enumerate(jobList): 
      # old print line['jobNum'] 
      line['jobNum'] = i
-
-
 
   # apply cross overs 
   crossOvers = True
   numCrossOvers=3
   if crossOvers:
     Crossovers(jobList,numCrossOvers)
-
 
 #
 # Genetic algorithm that randomizes the provided parameters (1 for now), selects the solution that minimizes the error, and repeats this process for a given number of iterations
@@ -426,17 +363,12 @@ def fittingAlgorithm(
   rejection = 0
   previousFitness = 1e9
   while iters < numIters and rejection<maxRejectionsAllowed:  
-      #print("Start") 
-      #print(trialParamVarDicts)
-
       ## Create 'master' varDict list
       iters += 1
 
       numVariedParams = 0
 
-
       print("iter", iters, " out of", numIters)
-      ###CMTprint "parmDict: " , parmDict
 
       #PKH need to allocate one per parent 
       #defaultVarDict = dict()
@@ -472,7 +404,6 @@ def fittingAlgorithm(
       numCores = np.min( [numCores, totNumRandomDraws] ) 
       print("Using %d cores for %d jobs"%(numCores,totNumRandomDraws))
 
-      ###CMTprint "outputList: ", outputList
       ## Create a list of jobs with randomized parameters
       # Here we create a much larger job list than we can actually use, so that we can randomly select a subset of which
       # This is mostly important for the multi-variable cases
@@ -524,13 +455,10 @@ def fittingAlgorithm(
           #slicedJobOutputs = jobOutputs_copy[slicer[]]
           #allErrors.append([myDataFrame.index[i]])
           #errorsGood_array.append([myDataFrame.index[i]])
-          ###CMTprint myDataFrame.index[i]
-          ###CMTprint myDataFrame.loc[myDataFrame.index[i],'jobNum']
           
           # score 'fitnesss' based on the squared error wrt each output parameter
           fitness = 0.0
           for key,obj in outputList.items():
-              ###CMTprint "outputList: ", key
               result = myDataFrame.loc[myDataFrame.index[i],key]
 
               # Decide on scalar vs vector comparisons
@@ -579,7 +507,6 @@ def fittingAlgorithm(
       jobIndex = jobNums[ pandasIndex ]
       jobIndices =  jobNums[ pandasSortedIndices[0:nParents] ] 
       print("Best jobIndices: ", jobIndices)
-      ###CMTprint "jobFitnes: " , jobFitnesses[jobIndex]
 
       # grab the job 'object' corresponding to that index
       #bestJob = jobList[ jobIndex ]
@@ -590,9 +517,6 @@ def fittingAlgorithm(
         #print("Dbl fit",i, jobFitnesses[ pandasSortedIndices[i] ] ) 
         bestJobs.append( jobList[ jobIdx ] )    
 
-      ###CMTprint "bestJob: ", bestJob
-
-      ###CMTprint("CurrentFitness/Previous", currentFitness,previousFitness)
       if iters == 1:
         previousFitness = currentFitness
 
@@ -612,7 +536,6 @@ def fittingAlgorithm(
         # update 'trialParamDict' with new values, [0] represents mean value of paramater
         #PKH do for each parent 
         #for myVariedParamKey, variedParamVal in bestVarDict.items():
-          ###CMTprint myVariedParamKey, variedParamVal 
         #  trialParamVarDict[ myVariedParamKey ][0]  = variedParamVal
           # [1] to represent updating stdDev value
           # trialParamVarDict[ myVariedParam ][1]  = variedStdDevVal
@@ -638,16 +561,11 @@ def fittingAlgorithm(
         print("Old draw is better starting point, not overwriting starting point") 
         rejection+=1
         print("Rejected %d in a row (of %d) "%(rejection,maxRejectionsAllowed) )
-        
-      ###CMTprint allErrors
 
       #if errorsGood_array[iters-1].count(False) == 0:
           #errorsGood = True
       #else:
           #errorsGood = False
-          ###CMTprint "Error is not good, need to run another iteration."
-      #print("End")
-      #print(trialParamVarDicts) 
 
       #iters += 1
       bestJobi = bestJobs[0]
@@ -670,7 +588,7 @@ def fittingAlgorithm(
   #myDataFrame = PandaData(jobOutputs,csvFile="example.csv")
   
   #return myDataFrame
-  return randomDrawAllIters, bestDrawAllIters,previousFitness
+  return randomDrawAllIters, bestDrawAllIters, previousFitness
 
 def test3():
   simulation = runner.Runner(),
@@ -732,43 +650,12 @@ def test3():
     debug = True
 )
 
-def test1():
-  # parameters to vary 
-  stddev = 0.2
-  variedParamDict = {
-    # paramDict[myVariedParam] = [variedParamTruthVal, 0.2] # for log normal
-    "kon":  [0.5,stddev],
-    "koff":  [5.0,stddev]
-  }
-
-  # list of observables to be scored by GA 
-  outputList = { 
-    #"Cai":OutputObj("Cai","mean",[8,10], # in [s]
-    # 0.1),          # value you want 
-    "Nai":OutputObj("Nai","val_vs_time",[  0, 2],
-    [1,0.5,0.15],timeInterpolations=[  0,1,2]) # [ms] check that interpolated values at 0, 100, 200 are 1, 0.5 ... 
-  }
-
-  #testState = "Cai"          
-  simulation = runner.Runner()
-  results = run(
-    simulation,
-    yamlVarFile = "inputParams.yaml",
-    variedParamDict = variedParamDict,
-    jobDuration = 30e3, # [ms]
-    numRandomDraws = 8,  
-    numIters = 5,    
-    #sigmaScaleRate = 0.45,
-    outputList = outputList,
-    debug = True
-)
 
 
 
   
 # Here we try to optimize the sodium buffer to get the correct free Na concentration
 def validation():
-
   testState = "Cai"
   simulation = runner.Runner()
   results = run(
@@ -1015,8 +902,6 @@ def PlotDebuggingData(allDraws,bestDraws,numIters,numRandomDraws,title=None,file
   scatteredData= np.asarray(zip(iters,vals))
 
   veryBest = bestDraws[-1]
-  ###CMTprint bestDraws
-  ###CMTprint veryBest
   norm_by = 1/veryBest
 
   
@@ -1122,7 +1007,6 @@ if __name__ == "__main__":
   #fileIn= sys.argv[1]
   #if(len(sys.argv)==3):
   #  1
-  #  ###CMTprint "arg"
 
   # Loops over each argument in the command line
   for i,arg in enumerate(sys.argv):
