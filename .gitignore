@@ -3,3 +3,6 @@
 
 # Ignore any visual studio code user preferences
 .vscode/
+
+# Python cache files
+__pycache__
