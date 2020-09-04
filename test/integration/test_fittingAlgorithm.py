@@ -9,7 +9,11 @@ sys.path.append(PROJECT_ROOT)
 
 import fittingAlgorithm as fa
 
-def test1():
+def test_smoke_1():
+  """A simple smoke test to see if anything is on fire.
+
+  If this fails we know at least SOMETHING is wrong.
+  """
   # parameters to vary 
   stddev = 0.2
   variedParamDict = {
@@ -38,9 +42,6 @@ def test1():
       debug = True
   )
 
-  # Pull out the best draw of the last iteration of the algorithm.
-  trial_best_fitness = results["bestFitness"]
-
   # Ensure that the output is sufficiently accurate.
   accuracy_threshold = 0.4 # empirically derived value
   assert (results["bestFitness"] < accuracy_threshold), "Best fitness is too inaccurate!"
@@ -55,4 +56,27 @@ def test1():
     assert(np.isclose(bestVarDict_test[key], bestVarDict_truth[key])), (
       "\"{key}\" in bestVarDict did not validate!".format(key=key))
   
+def test_smoke_2():
+  """Here we try to optimize the sodium buffer to get the correct free Na concentration"""
+  testState = "Cai"
+  simulation = fa.runner.Runner()
+  results = fa.run(
+    simulation,
+    yamlVarFile = "inputParams.yaml",
+    variedParamDict = fa.variedParamListDefault,
+    jobDuration = 25e3, # [ms] 
+    numRandomDraws = 3,
+    numIters = 10,
+    sigmaScaleRate = 0.45,
+    outputParamName = "Container",
+    outputParamSearcher = testState,
+    outputParamMethod = "min",
+    outputParamTruthVal=0.1,
+    debug = True
+  )
 
+  refKon = 0.6012
+  bestKon = results['bestFitDict']
+  bestKon = bestKon['kon']
+  assert(np.abs(refKon - bestKon) < 1e-3), "FAIL!"
+  print("PASS!!") 

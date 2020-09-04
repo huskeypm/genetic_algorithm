@@ -255,11 +255,42 @@ def Crossovers(jobList,numCrossOvers=3
 #
 # Pulled out parameter randomization 
 #
-def randParams(
-  simulation,
-  jobList,defaultVarDict,fixedParamDict,parmDict,tsteps,numRandomDraws,randomDrawAllIters,iters,sigmaScaleRate,distro,outputList,
-  jobDuration,
-  odeModel=None): 
+def randParams(simulation, jobList, defaultVarDict, fixedParamDict, parmDict, tsteps, 
+  numRandomDraws, randomDrawAllIters, iters, sigmaScaleRate, distro, outputList, jobDuration,
+  odeModel=None):
+  """Pulled out parameter randomization
+
+  Parameters
+  ----------
+  simulation : [type]
+      [description]
+  jobList : [type]
+      [description]
+  defaultVarDict : [type]
+      [description]
+  fixedParamDict : [type]
+      [description]
+  parmDict : [type]
+      [description]
+  tsteps : [type]
+      [description]
+  numRandomDraws : [type]
+      [description]
+  randomDrawAllIters : [type]
+      [description]
+  iters : [type]
+      [description]
+  sigmaScaleRate : [type]
+      [description]
+  distro : [type]
+      [description]
+  outputList : [type]
+      [description]
+  jobDuration : [type]
+      [description]
+  odeModel : [type], optional
+      [description], by default None
+  """
   ctr=0
   ctr = len(jobList)  # should start from last jobList
   for parameter,values in parmDict.items():
@@ -323,28 +354,60 @@ def randParams(
   if crossOvers:
     Crossovers(jobList,numCrossOvers)
 
-#
-# Genetic algorithm that randomizes the provided parameters (1 for now), selects the solution that minimizes the error, and repeats this process for a given number of iterations
-#
-def fittingAlgorithm(
-  simulation,
-  odeModel,
-  myVariedParamKeys, # Supports multiple params, hopefully 
-  variedParamDict = None,
-  fixedParamDict=None, # optional, input set of fixed parameters/values
-  numCores=5,  # number of cores over which jobs are run
-  numRandomDraws=3,  # number of random draws for each parameter
-  jobDuration = 2000, # job run time, [ms]
-  tsteps = None, # linspace of time steps (optional) [ms]  
-  outputList = None,
-  truthValues = None,
-  sigmaScaleRate = 1., # rate at which sigma is reduced by iteration (larger values, faster decay) 
-  maxRejectionsAllowed=3,  # number of rejected steps in a row before exiting alg. 
-  numIters = 10,
-  distro = 'lognormal', # distribution with which we select new parameters
-  verbose=2
-  ):
+def fittingAlgorithm(simulation, odeModel, myVariedParamKeys, variedParamDict=None, 
+  fixedParamDict=None, numCores=5, numRandomDraws=3, jobDuration=2000, tsteps=None,
+  outputList=None, truthValues=None, sigmaScaleRate = 1., maxRejectionsAllowed=3, numIters=10,
+  distro = 'lognormal', verbose=2):
+  """Genetic algorithm that randomizes params, selects best solution, repeats for given iterations
+  
+  Genetic algorithm that randomizes the provided parameters (1 for now), selects the solution that 
+  minimizes the error, and repeats this process for a given number of iterations.
 
+  Parameters
+  ----------
+  simulation : [type]
+      [description]
+  odeModel : [type]
+      [description]
+  myVariedParamKeys : [type]
+      Supports multiple params, hopefully.
+  variedParamDict : dict
+      The varied parameter dictionary, by default None.
+  fixedParamDict : dict, optional
+      Input set of fixed parameters/values, by default None.
+  numCores : int, optional
+      Number of cores over which jobs are run, by default 5.
+  numRandomDraws : int, optional
+      Number of random draws for each parameter, by default 3.
+  jobDuration : int, optional
+      Job run time, [ms], by default 2000.
+  tsteps : np.linspace, optional
+      `np.linspace` of time steps [ms], by default None.
+  outputList : [type], optional
+      [description], by default None.
+  truthValues : [type], optional
+      [description],, by default None.
+  sigmaScaleRate : float, optional
+      Rate at which sigma is reduced by iteration (larger values, faster decay), by default 1.0.
+  maxRejectionsAllowed : int, optional
+      Number of rejected steps in a row before exiting alg, by default 3.
+  numIters : int, optional
+      [description], by default 10.
+  distro : str, optional
+      Distribution with which we select new parameters, by default "lognormal".
+  verbose : int, optional
+      The verbosity option, by default 2.
+
+  Returns
+  -------
+  tuple
+      Tuple of the following: randomDrawAllIters, bestDrawAllIters, previousFitness
+
+  Raises
+  ------
+  RuntimeError
+      Raises RuntimeError if `numCores` > 1. This is a debugging feature.
+  """
   #PKH adding pseudocode for multiple parents
   nParents = 2
 
@@ -420,10 +483,10 @@ def fittingAlgorithm(
     
         defaultVarDicti = defaultVarDicts[i]
         parmDicti= parmDicts[i]
-        randParams(
-          simulation,
-          jobList,defaultVarDicti,fixedParamDict,parmDicti,tsteps,numRandomDrawsi,randomDrawAllIters,iters,sigmaScaleRate,distro,outputList,jobDuration,odeModel)
-        #print("njobs",len(jobList))
+        randParams(simulation, jobList, defaultVarDicti, fixedParamDict, parmDicti, tsteps, 
+          numRandomDrawsi, randomDrawAllIters, iters, sigmaScaleRate, distro, outputList, 
+          jobDuration, odeModel)
+
       # this value should be numRandomDraws*numParents 
       #print(jobList)
         
@@ -445,9 +508,6 @@ def fittingAlgorithm(
       #myDataFrame = fitter.PandaData(jobOutputs,csvFile=None) # "example.csv")
       myDataFrame = PandaData(jobOutputs,csvFile=None) # "example.csv")
 
-      #allErrors.append([])
-      #errorsGood_array.append([])
-
       jobFitnesses = np.ones( len(myDataFrame.index) )*-1
       jobNums      = np.ones( len(myDataFrame.index),dtype=int )*-1
       for i in range(len(myDataFrame.index)):
@@ -463,8 +523,6 @@ def fittingAlgorithm(
 
               # Decide on scalar vs vector comparisons
               if not isinstance(result,np.ndarray):
-              #  print "already an array"
-              #else:
                 result = np.array( result )
 
               # sum over squares
@@ -493,9 +551,7 @@ def fittingAlgorithm(
       #
       # Summarize results
       #
-      print("myDataFrame: ")
-      print(myDataFrame)
-      
+      print("myDataFrame:\n", myDataFrame)
       print("jobFitnesses: ", jobFitnesses)
       # find best job
       #PKH need to sort and collect nParents best 
@@ -551,8 +607,6 @@ def fittingAlgorithm(
           #parmDicti= parmDicts[i]
           for myVariedParamKey, variedParamVal in bestVarDicti.items():
             trialParamVarDicti[ myVariedParamKey ][0]  = variedParamVal
-            #print("HACK") 
-            #trialParamVarDicti[ myVariedParamKey ][1]  = 0.
 
           print("Parent rank %d"%i,trialParamVarDicti)
           
@@ -649,72 +703,74 @@ def test3():
     outputList = outputList,
     debug = True
 )
-
-
-
-
   
-# Here we try to optimize the sodium buffer to get the correct free Na concentration
-def validation():
-  testState = "Cai"
-  simulation = runner.Runner()
-  results = run(
-    simulation,
-    yamlVarFile = "inputParams.yaml",
-    variedParamDict = variedParamListDefault,
-    jobDuration = 25e3, # [ms] 
-    numRandomDraws = 3,
-    numIters = 10,
-    sigmaScaleRate = 0.45,
-    outputParamName = "Container",
-    outputParamSearcher = testState,
-    outputParamMethod = "min",
-    outputParamTruthVal=0.1,
-    debug = True
-  )
-
-  
-  refKon = 0.6012
-  bestKon = results['bestFitDict']
-  bestKon = bestKon['kon']
-  assert(np.abs(refKon - bestKon) < 1e-3), "FAIL!"
-  print("PASS!!") 
-
-
-
-
 """
 The genetic algorithm wrapper
 This is the one you should mostly interface with (see validation()) 
 """
-def run(
-  simulation,
-  odeModel=None,   # "shannon_2004_rat.ode", # NEEDS TO BE ANTIQUATED 
-  myVariedParam=None,          
-  variedParamTruthVal=5.0,
-  variedParamDict = None,      
-  timeStart= 0, # [ms] discard data before this time point
-  jobDuration= 30e3, # [ms] simulation length
-  tsteps = None, # can input nonuniform times (non uniform linspace) 
-  fileName=None,
-  numRandomDraws=5,
-  numIters=3,
-  sigmaScaleRate=0.15,
-  outputList = None, # instead of manually passing in output param, comparison method etc, define list here (see default above) 
-  outputParamName="Nai", # general name for objective object 
-  outputParamSearcher="Nai", # name of index in return array 
-  outputParamMethod="mean",
-  outputParamTruthTimes=None, # time points ([ms]) at which to interpolate predicted values. Used where TruthVal is an array
-  outputParamTruthVal=12.0e-3, # can be an array
-  maxCores = 30,
-  yamlVarFile = None,
-  outputYamlFile = None,
-  debug = False,
-  fixedParamDict = None, # in case fixedParamDict s.b. passed in 
-  verboseLevel = 2, # show everything [2], show a bit [1]
-  distro = 'lognormal' # distribution with which we select new parameters
-):
-
+def run(simulation, odeModel=None, myVariedParam=None, variedParamTruthVal=5.0, 
+  variedParamDict=None, timeStart= 0, jobDuration= 30e3, tsteps=None, fileName=None,
+  numRandomDraws=5, numIters=3, sigmaScaleRate=0.15, outputList = None, outputParamName="Nai",
+  outputParamSearcher="Nai", outputParamMethod="mean", outputParamTruthTimes=None, 
+  outputParamTruthVal=12.0e-3, maxCores = 30, yamlVarFile = None, outputYamlFile = None, 
+  debug=False, fixedParamDict = None, verboseLevel=2, distro='lognormal'):
+  """Run the genetic algorithm
+  simulation : [type]
+      [description]
+  odeModel : [type], optional
+      "shannon_2004_rat.ode", NOTE NEEDS TO BE ANTIQUATED, by default None.
+  myVariedParam: [type], optional
+      [description], by default None.
+  variedParamTruthVal : int, optional
+      [description], by default 5.0.
+  variedParamDict : dict, optional
+      [description], by default None.
+  timeStart : int, optional
+      [ms] discard data before this time point, by default 0.
+  jobDuration : float, optional
+      [ms] simulation length, by default 30e3.
+  tsteps : [type], optional
+      Can input nonuniform times (non uniform linspace), by default None.
+  fileName : str, optional
+      [description], by default None.
+  numRandomDraws : int, optional
+      [description], by default 5.
+  numIters : int, optional
+      Number of iterations the genetic algorithm will perform, by default 3.
+  sigmaScaleRate : float, optional
+      The rate at which sigma is scaled every iteration, the larger the more it is scale.
+      By default 0.15.
+  outputList : [type]
+      Instead of manually passing in output param, comparison method etc, define list here (see 
+      default above), by default None.
+  outputParamName : str, optional
+      General name for objective object, by default "Nai".
+  outputParamSearcher : str, optional
+      Name of index in return array, by default "Nai".
+  outputParamMethod : str, optional
+      [description], by default "mean".
+  outputParamTruthTimes : [type], optional
+      Time points ([ms]) at which to interpolate predicted values. Used where TruthVal is an 
+      array, by default None.
+  outputParamTruthVal : float or 1D np.ndarray, optional
+      [description], by default 12.0e-3.
+  maxCores : int, optional
+      The maximum number of cores to use. The algorithm will not attempt to use more cores than
+      your workstation has, but specifying this option can free up other cores of your workstation
+      to handle tasks outside of the genetic algorithm. By default 30.
+  yamlVarFile : str, optional
+      [description], by default None.
+  outputYamlFile : str, optional
+      The name of the YAML file to store results, by default None.
+  debug : bool, optional
+      Whether or not to start in debug mode, by default False.
+  fixedParamDict : [type]
+      In case fixedParamDict s.b. passed in, by default None.
+  verboseLevel : int
+      The verbosity level of the output. 2 to show everything, 1 to show a bit, by default 2.
+  distro : str, optional
+      Distribution with which we select new parameters, by default 'lognormal'.
+  """
   # Check inputs  
   if myVariedParam is None and variedParamDict is None:
     raise RuntimeError("Must define either myVariedParam or variedParamDict") 
@@ -724,19 +780,18 @@ def run(
   elif myVariedParam is not None:
     variedParamDict = {myVariedParam:[variedParamTruthVal, 0.2]} # for log normal
 
-
-  
-
   # open yaml file with variables needed for sim
   if fixedParamDict is None:
     fixedParamDict = YamlToParamDict(yamlVarFile)
 
   # debug mode
   if debug:
-    print("""
+    print(
+"""
 WARNING: In debug mode.
 Fixing random seed
-""") 
+"""
+    )
     np.random.seed(10)
     random.seed(10)
 
@@ -744,7 +799,7 @@ Fixing random seed
   if tsteps is None: 
     timeRange = [timeStart*ms_to_s,jobDuration*ms_to_s] # [s] range for data (It's because of the way GetData rescales the time series)
   else: 
-     timeRange =[timeStart, tsteps[-1]]
+    timeRange =[timeStart, tsteps[-1]]
 
 
   ## Define the observables and the truth value
