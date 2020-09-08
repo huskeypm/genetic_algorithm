@@ -5,12 +5,15 @@ import sys
 import multiprocessing
 import random
 from os import getpid
-import numpy as np
 import copy
+
+import yaml
+import numpy as np
 import pandas as pd
 import matplotlib.pylab as plt
 import imp
 from fittingUtil import InterpolateData
+
 
 # USER EDITS THESE
 import runner # simulation engine                 
@@ -25,43 +28,94 @@ variedParamListDefault= {
   "kon":  [5.0,stddev],
 }
 
-## Default structure for observables to be 'scored' by genetic algorithm
 class OutputObj:
-    def __init__(self,
-            name, # Name for measurable
-            mode, # type of comparison [mean, etc]
-            timeRange, # [ms], time interval during which to assess measurable
-            truthValue, # scalar/array 'truth' values
-            timeInterpolations= None ): # scalar/array where truth value occurs [ms] 
+    """Default structure for observables to be 'scored' by genetic algorithm"""
+    def __init__(self, name, mode, timeRange, truthValue, timeInterpolations=None):
+      """Initialize an instance of `OutputObj`
+
+      Parameters
+      ----------
+      name : str
+          Name for the measurable.
+      mode : str
+          The type of comparison to be made to the 'truth' data in `truthValue`.
+      timeRange : list or 1D np.ndarray
+          The time interval during which to assess the measurable [ms].
+      truthValue : int/float or 1D np.ndarray
+          The truth value(s) for which the measurable will be assessed against.
+      timeInterpolations : int/float or 1D np.ndarray, optional
+          Where truth value occurs [ms]. If no value is given, assess the measurable at the points
+          in the given `timeRange`. This is used if interpolation is necessary. By default None and
+          no interpolation is done.
+      """
       self.name = name
       self.mode = mode
       self.timeRange = np.array(timeRange) # [ms], NEED TO ADD
       self.timeInterpolations= np.copy(timeInterpolations)# if ndarray, will interpolate the values of valueTimeSeries at the provided times
       if isinstance(timeInterpolations,np.ndarray):
-        #self.timeInterpolations*=ms_to_s
         1 
       self.truthValue = np.array(truthValue,dtype=np.float)
       self.result = None
 
 ## Format:
 # Key: state name, metric of comparison, time range over which to compute metric, truth value
-outputListDefault = { "Cai":OutputObj("Cai","mean",[8,10], # in [s]
-                       0.1),          # value you want 
-                      "Nai":OutputObj("Nai","val_vs_time",[  0, 2],
-                      [1,0.5,0.15],timeInterpolations=[  0,1,2]) # check that interpolated values at 0, 100, 200 are 1, 0.5 ... 
-                    }
+outputListDefault = {
+  "Cai": OutputObj(
+    "Cai",
+    "mean",
+    [8,10], # in [s]
+    0.1 # value you want 
+  ),
+  "Nai": OutputObj(
+    "Nai",
+    "val_vs_time",
+    [0, 2],
+    [1, 0.5, 0.15],
+    timeInterpolations=[0, 1, 2] # check that interpolated values at 0, 100, 200 are 1, 0.5 ... 
+  ) 
+}
 
 class empty:pass
 
-"""
-Executes an input .ode file on each worker process.
-Returns result that is used for comparison against expt
-"""
-def workerParams(
-    jobDict,
-    skipProcess=False,
-    verbose = False): 
+class Results:
+  """Holds result information from job to be compared with experimental data"""
+  def __init__(self, outputResults, jobDict, jobNum):
+    """Initialize instance of `Results`
+    
+    Parameters
+    ----------
+    outputResults : dict
+        The output data from the simulation. This can either be processed or not. Of the structure:
+            outputResults = {
+              "t": <array of time points>
+              <for each measurable>
+              "<measurable name>": <measurable values at time points>
+            }
+    jobDict : dict
+        The dictionary describing this job.
+    jobNum : int
+        The number of the job that produced these results.
+    """
+    self.outputResults = outputResults
+    self.pid = getpid()
+    self.jobDict = jobDict
+    self.jobNum = jobNum
 
+def workerParams(jobDict, skipProcess=False, verbose=False):
+    """Executes an input .ode file on each worker process
+
+    Parameters
+    ----------
+
+    Returns
+    -------
+    tuple
+      Tuple of results with (jobNum, results) used for comparison against experiment where:
+        + jobNum : int 
+          + indicating the number of the job.
+        + results : Results
+          + The results of the job.
+    """
     simulation = jobDict['simulation']  # simulation object
     odeName = jobDict['odeModel']
     jobNum = jobDict['jobNum']
@@ -112,20 +166,36 @@ def workerParams(
       outputResults = ProcessWorkerOutputs(data,outputList,tag=jobNum)
 
     ## package additional useful information
-    results = empty()
-    results.outputResults = outputResults
-    results.pid = getpid()
-    results.jobDict = jobDict
-    results.jobNum = jobNum
+    results = Results(outputResults, jobDict, jobNum)
 
-    return jobNum,results
+    return jobNum, results
 
-"""
-Given data dictionary, pulls out subsection of data
-Data subset is evaluate based on 'obj.mode', which defines the type of analysis done.
-See OutputObj class definition and ProcessDataArray function
-"""
-def ProcessWorkerOutputs(data,outputList, tag=99):
+def ProcessWorkerOutputs(data, outputList, tag=99):
+  """Given data dictionary, pulls out subsection of data
+
+  Data subset is evaluated based on 'obj.mode', which defines the type of analysis done.
+  See OutputObj class definition and ProcessDataArray function
+
+  Parameters
+  ----------
+  data : dict
+      The output data from the simulation. Of the structure:
+          data = {
+              "t": <array of time points>
+              <for each measurable>
+              "<measurable name>": <measurable values at time points>
+          }
+  outputList : dict
+      Dictionary holding the name(s) of the measurable(s) as keys and `OutputObj`(s) as the values.
+  tag : int, optional
+      The job number for this job, by default 99. NOT CURRENTLY USED.
+
+  Returns
+  -------
+  dict
+      The new, processed, outputResults, where everything except the result is copied from given 
+      `outputList`. `outputList[key].result` is the newly processed results.
+  """
   outputResults = {}
   for key,obj in outputList.items():
     dataSub = analyze.GetData(data, obj.name)
@@ -138,28 +208,45 @@ def ProcessWorkerOutputs(data,outputList, tag=99):
 
   return outputResults
 
-
-
-#
-# Reads yaml file and puts into parameter dictionary 
-# 
-import yaml
 def YamlToParamDict(yamlVarFile):
+  """Reads YAML file and puts into parameter dictionary
+
+  Parameters
+  ----------
+  yamlVarFile : str
+      File name/path to the YAML file.
+
+  Returns
+  -------
+  dict
+      The parameter dictionary read in, if given a filepath in `yamlVarFile`.
+  """
   fixedParamDict = None
   if yamlVarFile is not None:
-    with open(yamlVarFile ) as fp:
+    with open(yamlVarFile, 'r') as fp:
       fixedParamDict = yaml.load(fp)
-      #varDict[key] = np.float( val )
+
     # converting to float since yamml doesnt know science notation
     for key, val in fixedParamDict.items():
       fixedParamDict[key] = np.float(val)
   return fixedParamDict
 
 
-#
-# stores all data into a pandas object, which simplifies analyses later
-#
-def PandaData(jobOutputs,csvFile="example.csv"):
+def PandaData(jobOutputs, csvFile="example.csv"):
+  """Stores all data into a pandas object, which simplifies analyses later
+
+  Parameters
+  ----------
+  jobOutputs : dict
+      A dictionary with worker numbers as keys and job objects as values.
+  csvFile : str, optional
+      [description], by default "example.csv"
+
+  Returns
+  -------
+  pandas.DataFrame
+      The dataframe holding our job outputs.
+  """
   masterDict = dict()
 
   # get dictionary for each job and append it to a 'master' dictionary
@@ -168,38 +255,31 @@ def PandaData(jobOutputs,csvFile="example.csv"):
     jobID = jobDict['jobID']
     masterDict[jobID]=jobDict
 
-
   # store data in pandas dataframe
   df = pd.DataFrame(masterDict)
   df = df.T
-  if csvFile!=None:
+  if csvFile != None:
     df.to_csv(csvFile)
   return df    
 
-
-#def PandaDataOLD(jobOutputs,csvFile="example.csv"):
-#  raise RuntimeError("Not using")
-#  masterDict = dict()
-#
-#  # get dictionary for each job and append it to a 'master' dictionary
-#  for workerNum, jobObj in jobOutputs.iteritems():
-#    jobDict = StoreJob(job1= jobObj)
-#    jobID = jobDict['jobID']
-#    masterDict[jobID]=jobDict
-#
-#
-#  # store data in pandas dataframe
-#  df = pd.DataFrame(masterDict)
-#  df = df.T
-#  df.to_csv(csvFile)
-#  return df
-
 # Stores job information into a dict that can be used with pandas
 def StoreJob(job1):
+    """Stores job information into a dict that can be used with pandas
+
+    Parameters
+    ----------
+    job1 : dict
+        A dictionary holding job information.
+
+    Returns
+    -------
+    dict
+        A dictionary that works well when converting to a pandas.DataFrame object.
+    """
     pandasDict = dict()
     tag = "%d_%d"%(job1.jobNum,job1.pid)
-    pandasDict['jobID']=tag
-    pandasDict['jobNum']=job1.jobNum
+    pandasDict['jobID'] = tag
+    pandasDict['jobNum'] = job1.jobNum
 
     # pull out inputs
     varDict = job1.jobDict['varDict']
@@ -233,7 +313,7 @@ def Crossovers(jobList,numCrossOvers=3
   children=[]
   for i in range(numCrossOvers):
     # select paired alleles (idx1 will 'receive' idx2 info) 
-    idx1,idx2 = idxs[2*i], idxs[2*i+1]
+    idx1, idx2 = idxs[2*i], idxs[2*i+1]
 
     child1 = jobList[idx1]
     child2 = jobList[idx2]
@@ -494,11 +574,8 @@ def fittingAlgorithm(simulation, odeModel, myVariedParamKeys, variedParamDict=No
       ## Run jobs
       if numCores > 1:
           print("Multi-threading")
-          pool = multiprocessing.Pool(processes = numCores)
-          # print('jobList',jobList)
-          # for i,job in enumerate(jobList):
-          #   print('jobList',i, job)
-          jobOutputs = dict( pool.map(workerParams, jobList))#, outputList ) )
+          with multiprocessing.Pool(processes=numCores) as pool:
+              jobOutputs = dict( pool.map(workerParams, jobList) )
       else:
           print("Restricting to one job only/assuming results are all that's needed") 
           jobNum, results = workerParams(jobList[0])
@@ -704,10 +781,6 @@ def test3():
     debug = True
 )
   
-"""
-The genetic algorithm wrapper
-This is the one you should mostly interface with (see validation()) 
-"""
 def run(simulation, odeModel=None, myVariedParam=None, variedParamTruthVal=5.0, 
   variedParamDict=None, timeStart= 0, jobDuration= 30e3, tsteps=None, fileName=None,
   numRandomDraws=5, numIters=3, sigmaScaleRate=0.15, outputList = None, outputParamName="Nai",
@@ -715,6 +788,11 @@ def run(simulation, odeModel=None, myVariedParam=None, variedParamTruthVal=5.0,
   outputParamTruthVal=12.0e-3, maxCores = 30, yamlVarFile = None, outputYamlFile = None, 
   debug=False, fixedParamDict = None, verboseLevel=2, distro='lognormal'):
   """Run the genetic algorithm
+
+  This is the one you should mostly interface with (see validation()) 
+
+  Parameters
+  ----------
   simulation : [type]
       [description]
   odeModel : [type], optional
@@ -999,8 +1077,6 @@ def OutputOptimizedParams(
     yaml.dump(paramDict, outfile, default_flow_style=False)
   print("Saved new outputfile with optimized parameters")
   
-
-
 #!/usr/bin/env python
 import sys
 ##################################

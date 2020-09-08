@@ -79,4 +79,4 @@ def test_smoke_2():
   bestKon = results['bestFitDict']
   bestKon = bestKon['kon']
   assert(np.abs(refKon - bestKon) < 1e-3), "FAIL!"
-  print("PASS!!") 
+
