@@ -582,39 +582,27 @@ def fittingAlgorithm(simulation, odeModel, myVariedParamKeys, variedParamDict=No
           raise RuntimeError("PKH Needs to fig - give dataframe save" )
 
       # Shouldn't have to write csv for these
-      #myDataFrame = fitter.PandaData(jobOutputs,csvFile=None) # "example.csv")
-      myDataFrame = PandaData(jobOutputs,csvFile=None) # "example.csv")
+      myDataFrame = PandaData(jobOutputs, csvFile=None)
 
-      jobFitnesses = np.ones( len(myDataFrame.index) )*-1
-      jobNums      = np.ones( len(myDataFrame.index),dtype=int )*-1
+      jobFitnesses = np.ones( len(myDataFrame.index) ) * -1
+      jobNums      = np.ones( len(myDataFrame.index), dtype=int ) * -1
       for i in range(len(myDataFrame.index)):
-          #jobOutputs_copy = jobOutputs.copy()
-          #slicedJobOutputs = jobOutputs_copy[slicer[]]
-          #allErrors.append([myDataFrame.index[i]])
-          #errorsGood_array.append([myDataFrame.index[i]])
-          
           # score 'fitnesss' based on the squared error wrt each output parameter
           fitness = 0.0
-          for key,obj in outputList.items():
+          for key, obj in outputList.items():
               result = myDataFrame.loc[myDataFrame.index[i],key]
 
               # Decide on scalar vs vector comparisons
-              if not isinstance(result,np.ndarray):
+              if not isinstance(result, np.ndarray):
                 result = np.array( result )
 
               # sum over squares
               error = np.sum((result - obj.truthValue) ** 2)
               normFactor = np.sum(obj.truthValue ** 2)
               normError = np.sqrt(error/normFactor) 
-              if verbose>=2:
+              if verbose >= 2:
                 print("result: ", result, "truthValue: ", obj.truthValue)
-              #allErrors[iters-1].append(error)
 
-
-              #if error <= (obj.truthValue * 0.001):
-                  #errorsGood_array[iters-1].append(True)
-              #else:
-                  #errorsGood_array[iters-1].append(False)
               fitness += normError
 
           # compute sqrt
@@ -654,7 +642,6 @@ def fittingAlgorithm(simulation, odeModel, myVariedParamKeys, variedParamDict=No
         previousFitness = currentFitness
 
       if currentFitness <= previousFitness:
-
         # get its input params/values
         bestJobi = bestJobs[0]
         bestVarDict = bestJobi[ 'varDict' ]
@@ -685,20 +672,13 @@ def fittingAlgorithm(simulation, odeModel, myVariedParamKeys, variedParamDict=No
           for myVariedParamKey, variedParamVal in bestVarDicti.items():
             trialParamVarDicti[ myVariedParamKey ][0]  = variedParamVal
 
-          print("Parent rank %d"%i,trialParamVarDicti)
-          
+          print("Parent rank %d"%i,trialParamVarDicti)          
 
       else:
         print("Old draw is better starting point, not overwriting starting point") 
         rejection+=1
         print("Rejected %d in a row (of %d) "%(rejection,maxRejectionsAllowed) )
 
-      #if errorsGood_array[iters-1].count(False) == 0:
-          #errorsGood = True
-      #else:
-          #errorsGood = False
-
-      #iters += 1
       bestJobi = bestJobs[0]
       bestDrawAllIters.append( bestJobi[ 'varDict' ] ) 
 
@@ -707,80 +687,8 @@ def fittingAlgorithm(simulation, odeModel, myVariedParamKeys, variedParamDict=No
       print("######")
       print("")
 
-      #if iters >= numIters: # or errorsGood:
-      #    flag = False
-
-  #return results
-
-    #for key, results in outputs.iteritems():
-    #  print key
-
-  ## push data into a pandas object for later analysis
-  #myDataFrame = PandaData(jobOutputs,csvFile="example.csv")
-  
-  #return myDataFrame
   return randomDrawAllIters, bestDrawAllIters, previousFitness
 
-def test3():
-  simulation = runner.Runner(),
-  yamlVarFile = "inputParams.yaml",
-  testState = "Cai",         
-  # parameters to vary 
-  variedParamDict = {
-    "kon":  [0.5,0.2],         
-    "koff":  [5.0,0.2],         
-    },
-
-  # get trial simulation results 
-  returnData = []
-  for i in range(2):
-    varDict={
-            'kon':0.4+i*0.1,'koff':4.4}
-
-    returnDict=simulate(
-      varDict=varDict,        # dictionary of parameters to be used for simulation
- #   returnDict=dict(),    # dictionary output to be returned by simulation
-      jobDuration = 25e3   # [ms]
-    )
-
-    cai = analyze.GetData('Cai',returnDict['data'])
-    returnData.append( cai )
-    
-
-  if 1:
-    raise RuntimeError("DSF")
-    # once above works, do
-    traces = cellDetect()
-    for trace in traces:
-        outputObj=outPutList["Cai"]
-        outputObj.vals = cai
-        outputObj.ts   = ts   
-
-    results.cellNum=1
-    allResults.append(results)
-    print("make plots with cell number, legend") 
-
-  timeRange = [0, 2] # where to measure 
-  vals = cai
-  outputList= { 
-    #"Cai":OutputObj("Cai","val_vs_time",[  0, 2],
-    #[1,0.5,0.15],timeInterpolations=[  0,1,2]) # check that interpolated values at 0, 100, 200 are 1, 0.5 ...
-    "Cai":OutputObj("Cai","val_vs_time",timeRange,
-    vals,timeInterpolations=ts) # check that interpolated values at 0, 100, 200 are 1, 0.5 ...
-    }
-
-  results = run(
-    simulation,
-    yamlVarFile = yamlVarFile,            
-    variedParamDict = variedParamDict,
-    jobDuration = 30e3, # [ms]
-    numRandomDraws = 8,  
-    numIters = 5,    
-    #sigmaScaleRate = 0.45,
-    outputList = outputList,
-    debug = True
-)
-  
 def run(simulation, odeModel=None, myVariedParam=None, variedParamTruthVal=5.0, 
   variedParamDict=None, timeStart= 0, jobDuration= 30e3, tsteps=None, fileName=None,
   numRandomDraws=5, numIters=3, sigmaScaleRate=0.15, outputList = None, outputParamName="Nai",
