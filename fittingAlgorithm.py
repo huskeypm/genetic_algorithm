@@ -697,7 +697,8 @@ def run(simulation, odeModel=None, myVariedParam=None, variedParamTruthVal=5.0,
   debug=False, fixedParamDict = None, verboseLevel=2, distro='lognormal'):
   """Run the genetic algorithm
 
-  This is the one you should mostly interface with (see validation()) 
+  This is the one you should mostly interface with.
+    (see test/integration/test_fittingAlgorithm.validation()) 
 
   Parameters
   ----------
@@ -783,7 +784,7 @@ Fixing random seed
 
   # Data analyzed over this range
   if tsteps is None: 
-    timeRange = [timeStart*ms_to_s,jobDuration*ms_to_s] # [s] range for data (It's because of the way GetData rescales the time series)
+    timeRange = [timeStart * ms_to_s, jobDuration * ms_to_s] # [s] range for data (It's because of the way GetData rescales the time series)
   else: 
     timeRange =[timeStart, tsteps[-1]]
 
@@ -802,13 +803,13 @@ Fixing random seed
 
 
   # Run
-  numCores = np.min([numRandomDraws*len(variedParamDict.keys()),maxCores])
-  results = trial(simulation,odeModel=odeModel,variedParamDict=variedParamDict,
-                  outputList=outputList,fixedParamDict=fixedParamDict,
-                  numCores=numCores,numRandomDraws=numRandomDraws,
-                  jobDuration=jobDuration,tsteps=tsteps,
-                  numIters=numIters,sigmaScaleRate=sigmaScaleRate,
-                  fileName=fileName,distro=distro,
+  numJobs_tot = numRandomDraws * len(variedParamDict.keys())
+  numCores = np.min([numJobs_tot, maxCores])
+  results = trial(simulation, odeModel=odeModel, variedParamDict=variedParamDict,
+                  outputList=outputList, fixedParamDict=fixedParamDict,
+                  numCores=numCores, numRandomDraws=numRandomDraws,
+                  jobDuration=jobDuration, tsteps=tsteps, numIters=numIters,
+                  sigmaScaleRate=sigmaScaleRate, fileName=fileName,distro=distro,
                   verbose=verboseLevel)
 
   if outputYamlFile is not None:
@@ -824,26 +825,62 @@ def trial(
   odeModel,
   variedParamDict,
   outputList,
-  fixedParamDict=None, # dictionary of ode file parameters/values (optional), which are not randomized
-  numCores = 2, # maximum number of processors used at a time
-  numRandomDraws = 2,# number of random draws for parameters list in 'parmDict' (parmDict should probably be passed in)
-  jobDuration = 4e3, # [ms] simulation length
-  tsteps= None,  # optional time steps [ms] 
+  fixedParamDict=None,
+  numCores = 2, 
+  numRandomDraws = 2,
+  jobDuration = 4e3,
+  tsteps= None,
   numIters=2,
   sigmaScaleRate = 1.0,
   fileName = None,
-  distro = 'lognormal', # distribution with which we select new parameters
+  distro = 'lognormal',
   verbose =2
   ):
+  """The genetic algorithm
+
+  Parameters
+  ----------
+  simulation : [type]
+      [description]
+  odeModel : [type]
+      [description]
+  variedParamDict : [type]
+      [description]
+  outputList : [type]
+      [description]
+  fixedParamDict : dict, optional
+      Dictionary of ode file parameters/values, which are not randomized, by default None.
+  numCores : int, optional
+      Maximum number of processors used at a time, by default 2.
+  numRandomDraws : int, optional
+      Number of random draws for parameters list in `paramDict`. NOTE: `paramDict` should probably 
+      be passed in if using this. By default 2.
+  jobDuration : float, optional
+      Simulation length [ms], by default 4e3.
+  tsteps : [type], optional
+      Optional time steps [ms], by default None.
+  numIters : int, optional
+      Number of iterations for the genetic algorithm to perform, by default 2.
+  sigmaScaleRate : float
+      The rate at which sigma is scaled every iteration, the larger the more it is scale. By default
+      1.0
+  fileName : str
+      [description]
+  distro : str
+      Distribution with which we select new parameters, by default "lognormal".
+  verbose : int
+      The verbosity option, by default 2.
+
+  Returns
+  -------
+  dict
+      The results dictionary.
+  """
   odeModel = None 
 
   print("WHY is this wrapper needed") 
   # get varied parameter (should only be one for now)
   keys = [key for key in variedParamDict.keys()]
-  #variedParamKey = keys[0]
-  #if len(keys)>1:
-  #  raise RuntimeError("can only support one key for now")
-
 
   ## do fitting and get back debugging details
   allDraws,bestDraws,fitness = fittingAlgorithm(
@@ -856,9 +893,6 @@ def trial(
       verbose=verbose)
   bestFitDict =  bestDraws[-1]
   print("Best fit parameters", bestFitDict) 
-
-
-
 
   ## plot performance
   if fileName is not None:
