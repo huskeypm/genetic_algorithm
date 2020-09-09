@@ -1083,17 +1083,6 @@ if __name__ == "__main__":
 
   # Loops over each argument in the command line
   for i,arg in enumerate(sys.argv):
-    # calls 'doit' with the next argument following the argument '-validation'
-    if(arg=="-validation"):
-      validation()
-      quit()
-    elif(arg=="-test1"):
-      test1()
-      quit()
-    elif(arg=="-test2"):
-      test2()
-      quit()
-
     #if(arg=="-odeModel"):
     #  odeModel = sys.argv[i+1]
 
