@@ -1018,9 +1018,7 @@ def OutputOptimizedParams(
   with open(outputYamlFile, 'w') as outfile:
     yaml.dump(paramDict, outfile, default_flow_style=False)
   print("Saved new outputfile with optimized parameters")
-  
-#!/usr/bin/env python
-import sys
+
 ##################################
 #
 # Revisions
@@ -1028,12 +1026,8 @@ import sys
 #
 ##################################
 
-
-
-#
-# Message printed when program run without arguments
-#
 def helpmsg():
+  """Message printed when program run without arguments"""
   scriptName= sys.argv[0]
   msg="""
 Purpose:
@@ -1053,12 +1047,8 @@ Notes:
 # MAIN routine executed when launching this script from command line
 #
 if __name__ == "__main__":
-  import sys
   msg = helpmsg()
   remap = "none"
-
-  #if len(sys.argv) < 2:
-  #    raise RuntimeError(msg)
 
   odeModel="shannon_2004_rat.ode"
   yamlVarFile = None
