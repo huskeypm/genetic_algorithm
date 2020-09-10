@@ -23,8 +23,21 @@ In GAs a population of candidate solutions (called individuals, creatures, or ph
 
 ### What Are The Steps Of A Genetic Algorithm?
 
-We'll give a quick overview of the process of using our GA before we dive into each step in detail. The GA breaks down into the following steps:
+In the following visualization and list, we've broken down the steps of a GA:
+
+![Process of using a genetic algorithm. Visualization of the text contained herein.](ga_process.gif)
+
+1. Generate your population of candidate solutions (called individuals, creatures, or phenotypes). Each iteration of the genetic algorithm gives a new *generation*.
+2. For each individual in the generation, evaluate the problem you are wishing to optimize and assess their *fitness*, typically by calculating the value of the objective function (or how close the individual's solution is to the target solution).
+3. If the fitness is within the objective function tolerance you have described, quit the genetic algorithm. Congrats! You've completed the GA optimization.
+4. Else, *stochastically* select `n` individuals to reproduce and form the new generation. Note, when we say "reproduce" here, we mean that we choose the `n` best individuals to "carry on their genome". (Remember that 'genome' here actually means their set of parameters.)
+   1. Crossover the 'alleles' for the individuals' offspring.
+      1. This crossing over can be a bit complicated. In essence, we're blending the two 'genomes' (parameter sets) of the two parents into multiple offspring that have unique genomes of their own, just like in life!
+   2. Select a subset of the offspring to undergo mutations.
+      1. These mutations are random and are not common, but nonetheless are important to GAs. Mutations manifest as a modification of a parameter value that would not have originally occurred given the new individual's parents.
+5. Return to step 2.
 
 + Before using the genetic algorithm, reframe your optimization problem into a function that accepts parameters as floating point numbers. <font color=red>revise me</font> This will likely be easy since you're already working with numerical models of cellular function! This is usually as easy as making sure that all of your parameters are specified via a YAML file.
 
 1. Generate a population of candidate solutions (called individuals, creatures, or phenotypes)
+
