@@ -34,10 +34,5 @@ In the following visualization and list, we've broken down the steps of a GA:
    1. Crossover the 'alleles' for the individuals' offspring.
       1. This crossing over can be a bit complicated. In essence, we're blending the two 'genomes' (parameter sets) of the two parents into multiple offspring that have unique genomes of their own, just like in life!
    2. Select a subset of the offspring to undergo mutations.
-      1. These mutations are random and are not common, but nonetheless are important to GAs. Mutations manifest as a modification of a parameter value that would not have originally occurred given the new individual's parents.
+      1. These mutations are random and are not common, but nonetheless are important to GAs. Mutations manifest as a modification of a parameter value that would not have originally occurred given the new individual's parents. This often helps the GA to get out of local minima that would have otherwise caused the GA to converge to a non-optimal solution.
 5. Return to step 2.
-
-+ Before using the genetic algorithm, reframe your optimization problem into a function that accepts parameters as floating point numbers. <font color=red>revise me</font> This will likely be easy since you're already working with numerical models of cellular function! This is usually as easy as making sure that all of your parameters are specified via a YAML file.
-
-1. Generate a population of candidate solutions (called individuals, creatures, or phenotypes)
-
