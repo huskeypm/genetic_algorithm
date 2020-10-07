@@ -106,6 +106,12 @@ def workerParams(jobDict, skipProcess=False, verbose=False):
 
     Parameters
     ----------
+    jobDict : dict
+        Dictionary giving the parameters for the job we're running.
+    skipProcess : bool, optional
+        , by default False.
+    verbose : bool, optional
+        , by default False.
 
     Returns
     -------
@@ -338,7 +344,7 @@ def Crossovers(jobList,numCrossOvers=3
 def randParams(simulation, jobList, defaultVarDict, fixedParamDict, parmDict, tsteps, 
   numRandomDraws, randomDrawAllIters, iters, sigmaScaleRate, distro, outputList, jobDuration,
   odeModel=None):
-  """Pulled out parameter randomization
+  """Pulled out parameter randomization that stores formed `jobDict`s to be run in `jobList`
 
   Parameters
   ----------
@@ -436,8 +442,8 @@ def randParams(simulation, jobList, defaultVarDict, fixedParamDict, parmDict, ts
 
 def fittingAlgorithm(simulation, odeModel, myVariedParamKeys, variedParamDict=None, 
   fixedParamDict=None, numCores=5, numRandomDraws=3, jobDuration=2000, tsteps=None,
-  outputList=None, truthValues=None, sigmaScaleRate = 1., maxRejectionsAllowed=3, numIters=10,
-  distro = 'lognormal', verbose=2):
+  outputList=None, truthValues=None, sigmaScaleRate=1., maxRejectionsAllowed=3, numIters=10,
+  distro='lognormal', verbose=2):
   """Genetic algorithm that randomizes params, selects best solution, repeats for given iterations
   
   Genetic algorithm that randomizes the provided parameters (1 for now), selects the solution that 
@@ -690,11 +696,11 @@ def fittingAlgorithm(simulation, odeModel, myVariedParamKeys, variedParamDict=No
   return randomDrawAllIters, bestDrawAllIters, previousFitness
 
 def run(simulation, odeModel=None, myVariedParam=None, variedParamTruthVal=5.0, 
-  variedParamDict=None, timeStart= 0, jobDuration= 30e3, tsteps=None, fileName=None,
-  numRandomDraws=5, numIters=3, sigmaScaleRate=0.15, outputList = None, outputParamName="Nai",
+  variedParamDict=None, timeStart=0, jobDuration=30e3, tsteps=None, fileName=None,
+  numRandomDraws=5, numIters=3, sigmaScaleRate=0.15, outputList=None, outputParamName="Nai",
   outputParamSearcher="Nai", outputParamMethod="mean", outputParamTruthTimes=None, 
-  outputParamTruthVal=12.0e-3, maxCores = 30, yamlVarFile = None, outputYamlFile = None, 
-  debug=False, fixedParamDict = None, verboseLevel=2, distro='lognormal'):
+  outputParamTruthVal=12.0e-3, maxCores=30, yamlVarFile=None, outputYamlFile=None, 
+  debug=False, fixedParamDict=None, verboseLevel=2, distro='lognormal'):
   """Run the genetic algorithm
 
   This is the one you should mostly interface with.
