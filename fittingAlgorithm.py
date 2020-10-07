@@ -731,9 +731,11 @@ def run(simulation, odeModel=None, myVariedParam=None, variedParamTruthVal=5.0,
       Instead of manually passing in output param, comparison method etc, define list here (see 
       default above), by default None.
   outputParamName : str, optional
-      General name for objective object, by default "Nai".
+      General name for objective object, by default "Nai". If `outputList` is not specified, this is
+      the name of the single-variable output formed.
   outputParamSearcher : str, optional
-      Name of index in return array, by default "Nai".
+      Name of index in return array, by default "Nai". Ensure that this is the same as 
+      `outputParamName`.
   outputParamMethod : str, optional
       [description], by default "mean".
   outputParamTruthTimes : [type], optional
@@ -753,10 +755,15 @@ def run(simulation, odeModel=None, myVariedParam=None, variedParamTruthVal=5.0,
       Whether or not to start in debug mode, by default False.
   fixedParamDict : [type]
       In case fixedParamDict s.b. passed in, by default None.
-  verboseLevel : int
+  verboseLevel : int, optional
       The verbosity level of the output. 2 to show everything, 1 to show a bit, by default 2.
   distro : str, optional
       Distribution with which we select new parameters, by default 'lognormal'.
+
+  Returns
+  -------
+  dict:
+      The results dictionary.
   """
   # Check inputs  
   if myVariedParam is None and variedParamDict is None:
@@ -820,22 +827,9 @@ Fixing random seed
 """
 The genetic algorithm
 """
-def trial(
-  simulation,
-  odeModel,
-  variedParamDict,
-  outputList,
-  fixedParamDict=None,
-  numCores = 2, 
-  numRandomDraws = 2,
-  jobDuration = 4e3,
-  tsteps= None,
-  numIters=2,
-  sigmaScaleRate = 1.0,
-  fileName = None,
-  distro = 'lognormal',
-  verbose =2
-  ):
+def trial(simulation, odeModel, variedParamDict, outputList, fixedParamDict=None, numCores=2, 
+  numRandomDraws=2, jobDuration=4e3, tsteps=None, numIters=2, sigmaScaleRate=1.0, fileName=None,
+  distro='lognormal', verbose=2):
   """The genetic algorithm
 
   Parameters
