@@ -1,0 +1,9 @@
+# Output PNG files
+*.png
+
+# Ignore any visual studio code user preferences
+.vscode/
+
+# Python cache files
+__pycache__/
+*.pyc
