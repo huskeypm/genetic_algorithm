@@ -36,7 +36,7 @@ class OutputObj:
       Parameters
       ----------
       name : str
-          Name for the measurable.
+          Name for the measurable (state name as written in the ode file) 
       mode : str
           The type of comparison to be made to the 'truth' data in `truthValue`.
       timeRange : list or 1D np.ndarray
@@ -58,7 +58,8 @@ class OutputObj:
       self.result = None
 
 ## Format:
-# Key: state name, metric of comparison, time range over which to compute metric, truth value
+# Key: OuputObj(state name, metric of comparison, time range over which to compute metric, truth value)
+# Note that multiple OutputObjs can be considered (like channels) 
 outputListDefault = {
   "Cai": OutputObj(
     "Cai",
@@ -596,6 +597,9 @@ def fittingAlgorithm(simulation, odeModel, myVariedParamKeys, variedParamDict=No
           # score 'fitnesss' based on the squared error wrt each output parameter
           fitness = 0.0
           for key, obj in outputList.items():
+              # XF
+              # odeKey = obj.name   # odeKeyName, not NAME 
+              # result = myDataFrame.loc[myDataFrame.index[i],odeKey]
               result = myDataFrame.loc[myDataFrame.index[i],key]
 
               # Decide on scalar vs vector comparisons
