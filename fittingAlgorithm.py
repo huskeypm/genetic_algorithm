@@ -30,7 +30,7 @@ variedParamListDefault= {
 
 class OutputObj:
     """Default structure for observables to be 'scored' by genetic algorithm"""
-    def __init__(self, name, mode, timeRange, truthValue, timeInterpolations=None):
+    def __init__(self, odeKeyName, mode, timeRange, truthValue, timeInterpolations=None):
       """Initialize an instance of `OutputObj`
 
       Parameters
@@ -48,7 +48,7 @@ class OutputObj:
           in the given `timeRange`. This is used if interpolation is necessary. By default None and
           no interpolation is done.
       """
-      self.name = name
+      self.odeKeyName = odeKeyName
       self.mode = mode
       self.timeRange = np.array(timeRange) # [ms], NEED TO ADD
       self.timeInterpolations= np.copy(timeInterpolations)# if ndarray, will interpolate the values of valueTimeSeries at the provided times
@@ -205,7 +205,7 @@ def ProcessWorkerOutputs(data, outputList, tag=99):
   """
   outputResults = {}
   for key,obj in outputList.items():
-    dataSub = analyze.GetData(data, obj.name)
+    dataSub = analyze.GetData(data, obj.odeKeyName)
 
     result = analyze.ProcessDataArray(dataSub,obj.mode,obj.timeRange,obj.timeInterpolations,key=key)
 
@@ -597,10 +597,8 @@ def fittingAlgorithm(simulation, odeModel, myVariedParamKeys, variedParamDict=No
           # score 'fitnesss' based on the squared error wrt each output parameter
           fitness = 0.0
           for key, obj in outputList.items():
-              # XF
-              # odeKey = obj.name   # odeKeyName, not NAME 
-              # result = myDataFrame.loc[myDataFrame.index[i],odeKey]
-              result = myDataFrame.loc[myDataFrame.index[i],key]
+              odeKey = obj.odeKeyName  
+              result = myDataFrame.loc[myDataFrame.index[i],odeKey]
 
               # Decide on scalar vs vector comparisons
               if not isinstance(result, np.ndarray):
@@ -945,7 +943,7 @@ def DisplayFit(simulation,
     1
   #key = outputList.keys()[0]
   obj= outputList[key]
-  testStateName = obj.name
+  testStateName = obj.odeKeyName
   data = workerResults.outputResults
   dataSub = analyze.GetData(data,testStateName)
 
