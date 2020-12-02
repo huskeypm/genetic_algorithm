@@ -4,6 +4,8 @@ Genetic algorithm for fitting ODEs
 # Table of Contents
 - [Genetic Algorithm](#genetic-algorithm)
 - [Table of Contents](#table-of-contents)
+  - [Installation](#installation)
+    - [Package Requirements](#package-requirements)
   - [components](#components)
   - [To run](#to-run)
 - [simple case](#simple-case)
@@ -15,6 +17,22 @@ Genetic algorithm for fitting ODEs
   - [Testing](#testing)
     - [Running Tests](#running-tests)
     - [Writing Tests](#writing-tests)
+
+## Installation
+
+1. Clone respository into a local directory.
+2. Through whatever virtual environment manager you wish to use (Anaconda, pipenv, etc.) install the dependencies listed in [Package Requirements](#package-requirements).
+3. Validate that the installation completed without errors by running the testing suites as described in [Running Tests](#running-tests).
+
+### Package Requirements
+
++ numpy
++ pandas
++ matplotlib
++ scipy
++ PyYAML
++ pytest
++ jupyterlab
 
 ## components 
 runner.py - your simulation engine
