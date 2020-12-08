@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import sys
+import os
 #sys.path.append("./fitting_sensitivity/")
 
 import multiprocessing
@@ -702,7 +703,7 @@ def run(simulation, odeModel=None, myVariedParam=None, variedParamTruthVal=5.0,
   numRandomDraws=5, numIters=3, sigmaScaleRate=0.15, outputList=None, outputParamName="Nai",
   outputParamSearcher="Nai", outputParamMethod="mean", outputParamTruthTimes=None, 
   outputParamTruthVal=12.0e-3, maxCores=30, yamlVarFile=None, outputYamlFile=None, 
-  debug=False, fixedParamDict=None, verboseLevel=2, distro='lognormal'):
+  debug=False, fixedParamDict=None, verboseLevel=2, distro='lognormal', output_dir="."):
   """Run the genetic algorithm
 
   This is the one you should mostly interface with.
@@ -767,6 +768,8 @@ def run(simulation, odeModel=None, myVariedParam=None, variedParamTruthVal=5.0,
       The verbosity level of the output. 2 to show everything, 1 to show a bit, by default 2.
   distro : str, optional
       Distribution with which we select new parameters, by default 'lognormal'.
+  output_dir : str
+      The path to the directory where figures/output will be saved.
 
   Returns
   -------
@@ -825,7 +828,7 @@ Fixing random seed
                   numCores=numCores, numRandomDraws=numRandomDraws,
                   jobDuration=jobDuration, tsteps=tsteps, numIters=numIters,
                   sigmaScaleRate=sigmaScaleRate, fileName=fileName,distro=distro,
-                  verbose=verboseLevel)
+                  verbose=verboseLevel, output_dir=output_dir)
 
   if outputYamlFile is not None:
     OutputOptimizedParams(results['bestFitDict'],originalYamlFile=yamlVarFile,outputYamlFile=outputYamlFile)
@@ -837,7 +840,7 @@ The genetic algorithm
 """
 def trial(simulation, odeModel, variedParamDict, outputList, fixedParamDict=None, numCores=2, 
   numRandomDraws=2, jobDuration=4e3, tsteps=None, numIters=2, sigmaScaleRate=1.0, fileName=None,
-  distro='lognormal', verbose=2):
+  distro='lognormal', verbose=2, output_dir="."):
   """The genetic algorithm
 
   Parameters
@@ -872,6 +875,8 @@ def trial(simulation, odeModel, variedParamDict, outputList, fixedParamDict=None
       Distribution with which we select new parameters, by default "lognormal".
   verbose : int
       The verbosity option, by default 2.
+  output_dir : str
+      The path to the directory where figures/output will be saved.
 
   Returns
   -------
@@ -917,7 +922,8 @@ def trial(simulation, odeModel, variedParamDict, outputList, fixedParamDict=None
   results['fixedParamDict'] = fixedParamDict
   results['data']  = DisplayFit(
     simulation,
-    odeModel, jobDuration=jobDuration,tsteps=tsteps,fixedParamDict=fixedParamDict,results=results)
+    odeModel, jobDuration=jobDuration,tsteps=tsteps,fixedParamDict=fixedParamDict,results=results,
+    output_dir=output_dir)
 
   return results
 
@@ -925,7 +931,8 @@ def DisplayFit(simulation,
          odeModel=None, 
          jobDuration=30e3,tsteps=None,
          fixedParamDict=None,
-         results=None):           
+         results=None,
+         output_dir="."):           
   print("Running demo with new parameters for comparison against truth" )
 
   # run job with best parameters
@@ -963,7 +970,8 @@ def DisplayFit(simulation,
 
   plt.title(testStateName)
   plt.legend(loc=0)
-  plt.gcf().savefig(testStateName + ".png")
+  file_path = os.path.join(output_dir, testStateName + ".png")
+  plt.gcf().savefig(file_path)
 
 
   return data
